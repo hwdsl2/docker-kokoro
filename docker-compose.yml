@@ -1,0 +1,13 @@
+services:
+  tts:
+    image: hwdsl2/kokoro-tts
+    container_name: tts
+    restart: always
+    ports:
+      - "8880:8880/tcp"  # For a host-based reverse proxy, change to "127.0.0.1:8880:8880/tcp"
+    volumes:
+      - tts-data:/var/lib/tts
+      - ./tts.env:/tts.env:ro
+
+volumes:
+  tts-data:
