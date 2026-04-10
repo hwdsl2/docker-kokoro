@@ -16,7 +16,11 @@
 - 透過 Docker 資料捲持久化模型快取
 - 多架構：`linux/amd64`、`linux/arm64`
 
-**另提供：** [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md) 與 [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md) 的 Docker 映像。
+**另提供：**
+- AI/音訊：[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)
+- VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md)
+
+**提示：** Whisper、LiteLLM 和 Kokoro TTS 可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上搭建一套完整的語音 AI 系統。
 
 ## 快速開始
 
@@ -28,10 +32,12 @@ docker run \
     --restart=always \
     -v tts-data:/var/lib/tts \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 **注：** 如需面向網際網路的部署，**強烈建議**使用[反向代理](#使用反向代理)來新增 HTTPS。此時，還應將上述 `docker run` 指令中的 `-p 8880:8880` 替換為 `-p 127.0.0.1:8880:8880`，以防止從外部直接存取未加密連接埠。
+
+**注：** 本映像檔由於使用 PyTorch 執行時，至少需要約 1 GB 可用記憶體。在總記憶體僅 1 GB 的伺服器上可能無法穩定運行。
 
 Kokoro 模型（約 320 MB）將在首次啟動時自動下載並快取。查看日誌確認伺服器已就緒：
 
@@ -59,17 +65,17 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 
 ## 下載
 
-從 [Docker Hub](https://hub.docker.com/r/hwdsl2/kokoro-tts/) 取得受信任的建置：
+從 [Docker Hub](https://hub.docker.com/r/hwdsl2/tts-server/) 取得受信任的建置：
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
-也可從 [Quay.io](https://quay.io/repository/hwdsl2/kokoro-tts) 下載：
+也可從 [Quay.io](https://quay.io/repository/hwdsl2/tts-server) 下載：
 
 ```bash
-docker pull quay.io/hwdsl2/kokoro-tts
-docker image tag quay.io/hwdsl2/kokoro-tts hwdsl2/kokoro-tts
+docker pull quay.io/hwdsl2/tts-server
+docker image tag quay.io/hwdsl2/tts-server hwdsl2/tts-server
 ```
 
 支援平台：`linux/amd64` 和 `linux/arm64`。
@@ -90,7 +96,7 @@ docker image tag quay.io/hwdsl2/kokoro-tts hwdsl2/kokoro-tts
 | `TTS_LOG_LEVEL` | 日誌等級：`DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`。 | `INFO` |
 | `TTS_LOCAL_ONLY` | 設定為任意非空值（例如 `true`）時，停用所有 HuggingFace 模型下載。適用於離線或氣隙部署（需預快取模型）。 | *(未設定)* |
 
-**注意：** 在 `env` 檔案中，值可以用單引號括起來，例如 `VAR='value'`。`=` 兩側不要有空格。如果變更了 `TTS_PORT`，請相應更新 `docker run` 指令中的 `-p` 參數。
+**注：** 在 `env` 檔案中，值可以用單引號括起來，例如 `VAR='value'`。`=` 兩側不要有空格。如果變更了 `TTS_PORT`，請相應更新 `docker run` 指令中的 `-p` 參數。
 
 使用 `env` 檔案的範例：
 
@@ -103,7 +109,7 @@ docker run \
     -v tts-data:/var/lib/tts \
     -v ./tts.env:/tts.env:ro \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 `env` 檔案以綁定掛載方式傳入容器，每次重新啟動時自動生效，無需重新建立容器。
@@ -222,13 +228,13 @@ docker exec tts tts_manage --listvoices
 如需更新 Docker 映像和容器，首先[下載](#下載)最新版本：
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
 如果映像已是最新版本，您將看到：
 
 ```
-Status: Image is up to date for hwdsl2/kokoro-tts:latest
+Status: Image is up to date for hwdsl2/tts-server:latest
 ```
 
 否則將下載最新版本。刪除並重新建立容器：
@@ -240,9 +246,46 @@ docker rm -f tts
 
 您下載的模型將保留在 `tts-data` 資料捲中。
 
+## 與其他 AI 服務搭配使用
+
+[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md) 和 [Kokoro TTS](https://github.com/hwdsl2/docker-tts/blob/main/README-zh-Hant.md) 映像檔可以組合使用，在您自己的伺服器上搭建一個完全私密的自託管語音 AI 助理，所有資料均不傳送給第三方。
+
+```mermaid
+graph LR
+    A["🎤 語音輸入"] -->|轉錄| W["Whisper<br/>(語音轉文字)"]
+    W -->|文字| L["LiteLLM<br/>(AI 閘道)"]
+    L -->|回應| T["Kokoro TTS<br/>(文字轉語音)"]
+    T --> B["🔊 語音輸出"]
+```
+
+- **[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)** — 將語音音訊轉錄為文字（連接埠 `9000`）
+- **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)** — 將文字傳送給大型語言模型並傳回回應（連接埠 `4000`）
+- **[Kokoro TTS](https://github.com/hwdsl2/docker-tts/blob/main/README-zh-Hant.md)** — 將回應文字轉換為語音（連接埠 `8880`）
+
+三個容器都執行後，您可以將它們的 API 串接使用：
+
+```bash
+# 第一步：將語音音訊轉錄為文字（Whisper）
+TEXT=$(curl -s http://localhost:9000/v1/audio/transcriptions \
+    -F file=@question.mp3 -F model=whisper-1 | jq -r .text)
+
+# 第二步：將文字傳送給大型語言模型並取得回應（LiteLLM）
+RESPONSE=$(curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"gpt-4o\",\"messages\":[{\"role\":\"user\",\"content\":\"$TEXT\"}]}" \
+    | jq -r '.choices[0].message.content')
+
+# 第三步：將回應轉換為語音（Kokoro TTS）
+curl -s http://localhost:8880/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"tts-1\",\"input\":\"$RESPONSE\",\"voice\":\"af_heart\"}" \
+    --output response.mp3
+```
+
 ## 授權條款
 
-**注意：** 預構建映像中包含的軟體元件（如 Kokoro 及其相依套件）均受各自版權持有者所選授權條款約束。使用預構建映像時，使用者有責任確保其使用方式符合映像內所有軟體的相關授權條款要求。
+**注：** 預構建映像中包含的軟體元件（如 Kokoro 及其相依套件）均受各自版權持有者所選授權條款約束。使用預構建映像時，使用者有責任確保其使用方式符合映像內所有軟體的相關授權條款要求。
 
 著作權所有 (C) 2026 Lin Song   
 本作品採用 [MIT 授權條款](https://opensource.org/licenses/MIT)。

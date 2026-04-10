@@ -16,7 +16,11 @@ A Docker image to run a [Kokoro](https://github.com/hexgrad/kokoro) text-to-spee
 - Persistent model cache via a Docker volume
 - Multi-arch: `linux/amd64`, `linux/arm64`
 
-**Also available:** Docker images for [Whisper](https://github.com/hwdsl2/docker-whisper), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server) and [Headscale](https://github.com/hwdsl2/docker-headscale).
+**Also available:**
+- AI/Audio: [Whisper](https://github.com/hwdsl2/docker-whisper), [LiteLLM](https://github.com/hwdsl2/docker-litellm)
+- VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server), [Headscale](https://github.com/hwdsl2/docker-headscale)
+
+**Tip:** Whisper, LiteLLM, and Kokoro TTS can be [used together](#using-with-other-ai-services) to build a complete voice AI pipeline on your own server.
 
 ## Quick start
 
@@ -28,10 +32,12 @@ docker run \
     --restart=always \
     -v tts-data:/var/lib/tts \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 8880:8880` with `-p 127.0.0.1:8880:8880` in the `docker run` command above, to prevent direct access to the unencrypted port.
+
+**Note:** This image requires at least ~1 GB of free RAM due to the PyTorch runtime. It may not run reliably on a server with only 1 GB total RAM.
 
 The Kokoro model (~320 MB) is downloaded and cached on first start. Check the logs to confirm the server is ready:
 
@@ -59,17 +65,17 @@ For internet-facing deployments, see [Using a reverse proxy](#using-a-reverse-pr
 
 ## Download
 
-Get the trusted build from the [Docker Hub registry](https://hub.docker.com/r/hwdsl2/kokoro-tts/):
+Get the trusted build from the [Docker Hub registry](https://hub.docker.com/r/hwdsl2/tts-server/):
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
-Alternatively, you may download from [Quay.io](https://quay.io/repository/hwdsl2/kokoro-tts):
+Alternatively, you may download from [Quay.io](https://quay.io/repository/hwdsl2/tts-server):
 
 ```bash
-docker pull quay.io/hwdsl2/kokoro-tts
-docker image tag quay.io/hwdsl2/kokoro-tts hwdsl2/kokoro-tts
+docker pull quay.io/hwdsl2/tts-server
+docker image tag quay.io/hwdsl2/tts-server hwdsl2/tts-server
 ```
 
 Supported platforms: `linux/amd64` and `linux/arm64`.
@@ -103,7 +109,7 @@ docker run \
     -v tts-data:/var/lib/tts \
     -v ./tts.env:/tts.env:ro \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 The env file is bind-mounted into the container, so changes are picked up on every restart without recreating the container.
@@ -117,7 +123,7 @@ docker run \
     -v tts-data:/var/lib/tts \
     -p 8880:8880 \
     --env-file=tts.env \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 ## Using docker-compose
@@ -134,7 +140,7 @@ Example `docker-compose.yml` (already included):
 ```yaml
 services:
   tts:
-    image: hwdsl2/kokoro-tts
+    image: hwdsl2/tts-server
     container_name: tts
     restart: always
     ports:
@@ -377,13 +383,13 @@ Set `TTS_API_KEY` in your `env` file when the server is accessible from the publ
 To update the Docker image and container, first [download](#download) the latest version:
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
 If the Docker image is already up to date, you should see:
 
 ```
-Status: Image is up to date for hwdsl2/kokoro-tts:latest
+Status: Image is up to date for hwdsl2/tts-server:latest
 ```
 
 Otherwise, it will download the latest version. Remove and re-create the container:
@@ -394,6 +400,43 @@ docker rm -f tts
 ```
 
 Your downloaded model is preserved in the `tts-data` volume.
+
+## Using with other AI services
+
+The [Whisper](https://github.com/hwdsl2/docker-whisper), [LiteLLM](https://github.com/hwdsl2/docker-litellm), and [Kokoro TTS](https://github.com/hwdsl2/docker-tts) images can be combined to build a private, self-hosted voice AI assistant entirely on your own server, with no data sent to third parties.
+
+```mermaid
+graph LR
+    A["🎤 Audio input"] -->|transcribe| W["Whisper<br/>(speech-to-text)"]
+    W -->|text| L["LiteLLM<br/>(AI gateway)"]
+    L -->|response| T["Kokoro TTS<br/>(text-to-speech)"]
+    T --> B["🔊 Audio output"]
+```
+
+- **[Whisper](https://github.com/hwdsl2/docker-whisper)** — transcribes spoken audio to text (port `9000`)
+- **[LiteLLM](https://github.com/hwdsl2/docker-litellm)** — routes the text to an LLM and returns a response (port `4000`)
+- **[Kokoro TTS](https://github.com/hwdsl2/docker-tts)** — converts the response back to speech (port `8880`)
+
+Once all three containers are running, you can chain their APIs together:
+
+```bash
+# Step 1: Transcribe audio to text (Whisper)
+TEXT=$(curl -s http://localhost:9000/v1/audio/transcriptions \
+    -F file=@question.mp3 -F model=whisper-1 | jq -r .text)
+
+# Step 2: Send text to an LLM and get a response (LiteLLM)
+RESPONSE=$(curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"gpt-4o\",\"messages\":[{\"role\":\"user\",\"content\":\"$TEXT\"}]}" \
+    | jq -r '.choices[0].message.content')
+
+# Step 3: Convert the response to speech (Kokoro TTS)
+curl -s http://localhost:8880/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"tts-1\",\"input\":\"$RESPONSE\",\"voice\":\"af_heart\"}" \
+    --output response.mp3
+```
 
 ## Technical details
 

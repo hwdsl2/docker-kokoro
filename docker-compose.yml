@@ -1,6 +1,6 @@
 services:
   tts:
-    image: hwdsl2/kokoro-tts
+    image: hwdsl2/tts-server
     container_name: tts
     restart: always
     ports:

@@ -16,7 +16,11 @@
 - 通过 Docker 数据卷持久化模型缓存
 - 多架构：`linux/amd64`、`linux/arm64`
 
-**另提供：** [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md) 和 [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md) 的 Docker 镜像。
+**另提供：**
+- AI/音频：[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)
+- VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)
+
+**提示：** Whisper、LiteLLM 和 Kokoro TTS 可以[配合使用](#与其他-ai-服务配合使用)，在您自己的服务器上搭建一套完整的语音 AI 系统。
 
 ## 快速开始
 
@@ -28,10 +32,12 @@ docker run \
     --restart=always \
     -v tts-data:/var/lib/tts \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 **注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 8880:8880` 替换为 `-p 127.0.0.1:8880:8880`，以防止从外部直接访问未加密端口。
+
+**注：** 本镜像由于使用 PyTorch 运行时，至少需要约 1 GB 可用内存。在总内存仅 1 GB 的服务器上可能无法稳定运行。
 
 Kokoro 模型（约 320 MB）将在首次启动时自动下载并缓存。查看日志确认服务器已就绪：
 
@@ -59,17 +65,17 @@ curl http://您的服务器IP:8880/v1/audio/speech \
 
 ## 下载
 
-从 [Docker Hub](https://hub.docker.com/r/hwdsl2/kokoro-tts/) 获取可信构建：
+从 [Docker Hub](https://hub.docker.com/r/hwdsl2/tts-server/) 获取可信构建：
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
-也可从 [Quay.io](https://quay.io/repository/hwdsl2/kokoro-tts) 下载：
+也可从 [Quay.io](https://quay.io/repository/hwdsl2/tts-server) 下载：
 
 ```bash
-docker pull quay.io/hwdsl2/kokoro-tts
-docker image tag quay.io/hwdsl2/kokoro-tts hwdsl2/kokoro-tts
+docker pull quay.io/hwdsl2/tts-server
+docker image tag quay.io/hwdsl2/tts-server hwdsl2/tts-server
 ```
 
 支持平台：`linux/amd64` 和 `linux/arm64`。
@@ -90,7 +96,7 @@ docker image tag quay.io/hwdsl2/kokoro-tts hwdsl2/kokoro-tts
 | `TTS_LOG_LEVEL` | 日志级别：`DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`。 | `INFO` |
 | `TTS_LOCAL_ONLY` | 设置为任意非空值（例如 `true`）时，禁用所有 HuggingFace 模型下载。适用于离线或气隙部署（需预缓存模型）。 | *(未设置)* |
 
-**注意：** 在 `env` 文件中，值可以用单引号括起来，例如 `VAR='value'`。`=` 两侧不要有空格。如果更改了 `TTS_PORT`，请相应更新 `docker run` 命令中的 `-p` 参数。
+**注：** 在 `env` 文件中，值可以用单引号括起来，例如 `VAR='value'`。`=` 两侧不要有空格。如果更改了 `TTS_PORT`，请相应更新 `docker run` 命令中的 `-p` 参数。
 
 使用 `env` 文件的示例：
 
@@ -103,7 +109,7 @@ docker run \
     -v tts-data:/var/lib/tts \
     -v ./tts.env:/tts.env:ro \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 `env` 文件以绑定挂载方式传入容器，每次重启时自动生效，无需重建容器。
@@ -222,13 +228,13 @@ docker exec tts tts_manage --listvoices
 如需更新 Docker 镜像和容器，首先[下载](#下载)最新版本：
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
 如果镜像已是最新版本，您将看到：
 
 ```
-Status: Image is up to date for hwdsl2/kokoro-tts:latest
+Status: Image is up to date for hwdsl2/tts-server:latest
 ```
 
 否则将下载最新版本。删除并重新创建容器：
@@ -240,9 +246,46 @@ docker rm -f tts
 
 您下载的模型将保留在 `tts-data` 数据卷中。
 
+## 与其他 AI 服务配合使用
+
+[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md) 和 [Kokoro TTS](https://github.com/hwdsl2/docker-tts/blob/main/README-zh.md) 镜像可以组合使用，在您自己的服务器上搭建一个完全私密的自托管语音 AI 助手，所有数据均不发送给第三方。
+
+```mermaid
+graph LR
+    A["🎤 语音输入"] -->|转录| W["Whisper<br/>(语音转文本)"]
+    W -->|文本| L["LiteLLM<br/>(AI 网关)"]
+    L -->|响应| T["Kokoro TTS<br/>(文本转语音)"]
+    T --> B["🔊 语音输出"]
+```
+
+- **[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)** — 将语音音频转录为文本（端口 `9000`）
+- **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)** — 将文本发送给大型语言模型并返回响应（端口 `4000`）
+- **[Kokoro TTS](https://github.com/hwdsl2/docker-tts/blob/main/README-zh.md)** — 将响应文本转换为语音（端口 `8880`）
+
+三个容器都运行后，您可以将它们的 API 串联使用：
+
+```bash
+# 第一步：将语音音频转录为文本（Whisper）
+TEXT=$(curl -s http://localhost:9000/v1/audio/transcriptions \
+    -F file=@question.mp3 -F model=whisper-1 | jq -r .text)
+
+# 第二步：将文本发送给大型语言模型并获取响应（LiteLLM）
+RESPONSE=$(curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"gpt-4o\",\"messages\":[{\"role\":\"user\",\"content\":\"$TEXT\"}]}" \
+    | jq -r '.choices[0].message.content')
+
+# 第三步：将响应转换为语音（Kokoro TTS）
+curl -s http://localhost:8880/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"tts-1\",\"input\":\"$RESPONSE\",\"voice\":\"af_heart\"}" \
+    --output response.mp3
+```
+
 ## 授权协议
 
-**注意：** 预构建镜像中包含的软件组件（如 Kokoro 及其依赖项）均受各自版权持有者所选许可证约束。使用预构建镜像时，用户有责任确保其使用方式符合镜像内所有软件的相关许可证要求。
+**注：** 预构建镜像中包含的软件组件（如 Kokoro 及其依赖项）均受各自版权持有者所选许可证约束。使用预构建镜像时，用户有责任确保其使用方式符合镜像内所有软件的相关许可证要求。
 
 版权所有 (C) 2026 Lin Song
 本作品采用 [MIT 许可证](https://opensource.org/licenses/MIT)授权。

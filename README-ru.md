@@ -16,7 +16,11 @@ Docker-образ для запуска сервера синтеза речи [
 - Постоянный кеш модели через том Docker
 - Мультиархитектурный: `linux/amd64`, `linux/arm64`
 
-**Также доступно:** Docker-образы для [Whisper](https://github.com/hwdsl2/docker-whisper), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server) и [Headscale](https://github.com/hwdsl2/docker-headscale).
+**Также доступно:**
+- ИИ/Аудио: [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)
+- VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md), [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md), [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
+
+**Совет:** Whisper, LiteLLM и Kokoro TTS можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного голосового AI-конвейера на собственном сервере.
 
 ## Быстрый старт
 
@@ -28,10 +32,12 @@ docker run \
     --restart=always \
     -v tts-data:/var/lib/tts \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 **Примечание:** Для развёртываний, доступных из интернета, **настоятельно рекомендуется** использовать [обратный прокси](#использование-обратного-прокси) для добавления HTTPS. В этом случае также замените `-p 8880:8880` на `-p 127.0.0.1:8880:8880` в команде `docker run`, чтобы предотвратить прямой доступ к незашифрованному порту.
+
+**Примечание:** Для работы этого образа требуется не менее ~1 ГБ свободной оперативной памяти из-за использования PyTorch. На сервере с общим объёмом ОЗУ 1 ГБ образ может работать нестабильно.
 
 Модель Kokoro (~320 МБ) загружается и кешируется при первом запуске. Проверьте журналы, чтобы убедиться, что сервер готов:
 
@@ -59,17 +65,17 @@ curl http://IP_вашего_сервера:8880/v1/audio/speech \
 
 ## Скачать
 
-Получите доверенную сборку из [Docker Hub](https://hub.docker.com/r/hwdsl2/kokoro-tts/):
+Получите доверенную сборку из [Docker Hub](https://hub.docker.com/r/hwdsl2/tts-server/):
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
-Либо скачайте из [Quay.io](https://quay.io/repository/hwdsl2/kokoro-tts):
+Либо скачайте из [Quay.io](https://quay.io/repository/hwdsl2/tts-server):
 
 ```bash
-docker pull quay.io/hwdsl2/kokoro-tts
-docker image tag quay.io/hwdsl2/kokoro-tts hwdsl2/kokoro-tts
+docker pull quay.io/hwdsl2/tts-server
+docker image tag quay.io/hwdsl2/tts-server hwdsl2/tts-server
 ```
 
 Поддерживаемые платформы: `linux/amd64` и `linux/arm64`.
@@ -103,7 +109,7 @@ docker run \
     -v tts-data:/var/lib/tts \
     -v ./tts.env:/tts.env:ro \
     -p 8880:8880 \
-    -d hwdsl2/kokoro-tts
+    -d hwdsl2/tts-server
 ```
 
 Файл env монтируется в контейнер, изменения применяются при каждом перезапуске без пересоздания контейнера.
@@ -222,13 +228,13 @@ docker exec tts tts_manage --listvoices
 Для обновления Docker-образа и контейнера сначала [скачайте](#скачать) последнюю версию:
 
 ```bash
-docker pull hwdsl2/kokoro-tts
+docker pull hwdsl2/tts-server
 ```
 
 Если образ уже актуален, вы увидите:
 
 ```
-Status: Image is up to date for hwdsl2/kokoro-tts:latest
+Status: Image is up to date for hwdsl2/tts-server:latest
 ```
 
 В противном случае будет скачана последняя версия. Удалите и пересоздайте контейнер:
@@ -239,6 +245,43 @@ docker rm -f tts
 ```
 
 Скачанные модели сохранятся в томе `tts-data`.
+
+## Использование с другими AI-сервисами
+
+Образы [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md) и [Kokoro TTS](https://github.com/hwdsl2/docker-tts/blob/main/README-ru.md) можно объединить для создания приватного голосового ИИ-ассистента на собственном сервере — данные не передаются третьим сторонам.
+
+```mermaid
+graph LR
+    A["🎤 Голосовой ввод"] -->|транскрипция| W["Whisper<br/>(речь в текст)"]
+    W -->|текст| L["LiteLLM<br/>(AI-шлюз)"]
+    L -->|ответ| T["Kokoro TTS<br/>(текст в речь)"]
+    T --> B["🔊 Голосовой вывод"]
+```
+
+- **[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md)** — транскрибирует голосовое аудио в текст (порт `9000`)
+- **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)** — отправляет текст в LLM и возвращает ответ (порт `4000`)
+- **[Kokoro TTS](https://github.com/hwdsl2/docker-tts/blob/main/README-ru.md)** — преобразует ответ обратно в речь (порт `8880`)
+
+Когда все три контейнера запущены, их API можно объединить в цепочку:
+
+```bash
+# Шаг 1: Транскрибировать аудио в текст (Whisper)
+TEXT=$(curl -s http://localhost:9000/v1/audio/transcriptions \
+    -F file=@question.mp3 -F model=whisper-1 | jq -r .text)
+
+# Шаг 2: Отправить текст в LLM и получить ответ (LiteLLM)
+RESPONSE=$(curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"gpt-4o\",\"messages\":[{\"role\":\"user\",\"content\":\"$TEXT\"}]}" \
+    | jq -r '.choices[0].message.content')
+
+# Шаг 3: Преобразовать ответ в речь (Kokoro TTS)
+curl -s http://localhost:8880/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"tts-1\",\"input\":\"$RESPONSE\",\"voice\":\"af_heart\"}" \
+    --output response.mp3
+```
 
 ## Лицензия
 
