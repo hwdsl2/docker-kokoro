@@ -6,7 +6,7 @@
 # IN A CONTAINER!
 #
 # This file is part of Kokoro TTS Docker image, available at:
-# https://github.com/hwdsl2/docker-tts
+# https://github.com/hwdsl2/docker-kokoro
 #
 # Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 #
@@ -30,9 +30,9 @@ check_ip() {
 }
 
 # Source bind-mounted env file if present (takes precedence over --env-file)
-if [ -f /tts.env ]; then
+if [ -f /kokoro.env ]; then
   # shellcheck disable=SC1091
-  . /tts.env
+  . /kokoro.env
 fi
 
 if [ ! -f "/.dockerenv" ] && [ ! -f "/run/.containerenv" ] \
@@ -42,58 +42,58 @@ if [ ! -f "/.dockerenv" ] && [ ! -f "/run/.containerenv" ] \
 fi
 
 # Read and sanitize environment variables
-TTS_VOICE=$(nospaces "$TTS_VOICE")
-TTS_VOICE=$(noquotes "$TTS_VOICE")
-TTS_SPEED=$(nospaces "$TTS_SPEED")
-TTS_SPEED=$(noquotes "$TTS_SPEED")
-TTS_PORT=$(nospaces "$TTS_PORT")
-TTS_PORT=$(noquotes "$TTS_PORT")
-TTS_LANG_CODE=$(nospaces "$TTS_LANG_CODE")
-TTS_LANG_CODE=$(noquotes "$TTS_LANG_CODE")
-TTS_API_KEY=$(nospaces "$TTS_API_KEY")
-TTS_API_KEY=$(noquotes "$TTS_API_KEY")
-TTS_LOG_LEVEL=$(nospaces "$TTS_LOG_LEVEL")
-TTS_LOG_LEVEL=$(noquotes "$TTS_LOG_LEVEL")
-TTS_LOCAL_ONLY=$(nospaces "$TTS_LOCAL_ONLY")
-TTS_LOCAL_ONLY=$(noquotes "$TTS_LOCAL_ONLY")
+KOKORO_VOICE=$(nospaces "$KOKORO_VOICE")
+KOKORO_VOICE=$(noquotes "$KOKORO_VOICE")
+KOKORO_SPEED=$(nospaces "$KOKORO_SPEED")
+KOKORO_SPEED=$(noquotes "$KOKORO_SPEED")
+KOKORO_PORT=$(nospaces "$KOKORO_PORT")
+KOKORO_PORT=$(noquotes "$KOKORO_PORT")
+KOKORO_LANG_CODE=$(nospaces "$KOKORO_LANG_CODE")
+KOKORO_LANG_CODE=$(noquotes "$KOKORO_LANG_CODE")
+KOKORO_API_KEY=$(nospaces "$KOKORO_API_KEY")
+KOKORO_API_KEY=$(noquotes "$KOKORO_API_KEY")
+KOKORO_LOG_LEVEL=$(nospaces "$KOKORO_LOG_LEVEL")
+KOKORO_LOG_LEVEL=$(noquotes "$KOKORO_LOG_LEVEL")
+KOKORO_LOCAL_ONLY=$(nospaces "$KOKORO_LOCAL_ONLY")
+KOKORO_LOCAL_ONLY=$(noquotes "$KOKORO_LOCAL_ONLY")
 
 # Apply defaults
-[ -z "$TTS_VOICE" ]     && TTS_VOICE=af_heart
-[ -z "$TTS_SPEED" ]     && TTS_SPEED=1.0
-[ -z "$TTS_PORT" ]      && TTS_PORT=8880
-[ -z "$TTS_LANG_CODE" ] && TTS_LANG_CODE=a
-[ -z "$TTS_LOG_LEVEL" ] && TTS_LOG_LEVEL=INFO
+[ -z "$KOKORO_VOICE" ]     && KOKORO_VOICE=af_heart
+[ -z "$KOKORO_SPEED" ]     && KOKORO_SPEED=1.0
+[ -z "$KOKORO_PORT" ]      && KOKORO_PORT=8880
+[ -z "$KOKORO_LANG_CODE" ] && KOKORO_LANG_CODE=a
+[ -z "$KOKORO_LOG_LEVEL" ] && KOKORO_LOG_LEVEL=INFO
 
 # Validate port
-if ! check_port "$TTS_PORT"; then
-  exiterr "TTS_PORT must be an integer between 1 and 65535."
+if ! check_port "$KOKORO_PORT"; then
+  exiterr "KOKORO_PORT must be an integer between 1 and 65535."
 fi
 
 # Validate voice name (Kokoro native prefix or OpenAI alias)
-case "$TTS_VOICE" in
+case "$KOKORO_VOICE" in
   af_*|am_*|bf_*|bm_*) ;;
   alloy|echo|fable|onyx|nova|shimmer|ash|coral|sage|verse) ;;
-  *) exiterr "TTS_VOICE '$TTS_VOICE' is not recognized. Use a Kokoro voice ID (e.g. af_heart, bm_george) or an OpenAI alias (e.g. alloy, nova)." ;;
+  *) exiterr "KOKORO_VOICE '$KOKORO_VOICE' is not recognized. Use a Kokoro voice ID (e.g. af_heart, bm_george) or an OpenAI alias (e.g. alloy, nova)." ;;
 esac
 
 # Validate lang code
-case "$TTS_LANG_CODE" in
+case "$KOKORO_LANG_CODE" in
   a|b) ;;
-  *) exiterr "TTS_LANG_CODE must be 'a' (American English) or 'b' (British English)." ;;
+  *) exiterr "KOKORO_LANG_CODE must be 'a' (American English) or 'b' (British English)." ;;
 esac
 
 # Validate speed
-if ! printf '%s' "$TTS_SPEED" | grep -Eq '^[0-9]+(\.[0-9]+)?$'; then
-  exiterr "TTS_SPEED must be a number (e.g. 1.0)."
+if ! printf '%s' "$KOKORO_SPEED" | grep -Eq '^[0-9]+(\.[0-9]+)?$'; then
+  exiterr "KOKORO_SPEED must be a number (e.g. 1.0)."
 fi
 
 # Validate log level
-case "$TTS_LOG_LEVEL" in
+case "$KOKORO_LOG_LEVEL" in
   DEBUG|INFO|WARNING|ERROR|CRITICAL) ;;
-  *) exiterr "TTS_LOG_LEVEL must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL." ;;
+  *) exiterr "KOKORO_LOG_LEVEL must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL." ;;
 esac
 
-mkdir -p /var/lib/tts
+mkdir -p /var/lib/kokoro
 
 # Determine server address for display
 public_ip=$(curl -s --max-time 10 http://ipv4.icanhazip.com 2>/dev/null || true)
@@ -105,43 +105,46 @@ else
 fi
 
 # Export all config for the Python API server
-export TTS_VOICE
-export TTS_SPEED
-export TTS_PORT
-export TTS_LANG_CODE
-export TTS_API_KEY
-export TTS_LOG_LEVEL
-export TTS_LOCAL_ONLY
-# Point Kokoro / HuggingFace Hub at the persistent Docker volume
-export HF_HOME=/var/lib/tts
+export KOKORO_VOICE
+export KOKORO_SPEED
+export KOKORO_PORT
+export KOKORO_LANG_CODE
+export KOKORO_API_KEY
+export KOKORO_LOG_LEVEL
+export KOKORO_LOCAL_ONLY
 
-# Persist config values so tts_manage can read them without the env file
-printf '%s' "$TTS_PORT"    > /var/lib/tts/.port
-printf '%s' "$TTS_VOICE"   > /var/lib/tts/.voice
-printf '%s' "$server_addr" > /var/lib/tts/.server_addr
+# Point Kokoro / HuggingFace Hub at the persistent Docker volume.
+export HF_HOME=/var/lib/kokoro
+export HF_HUB_CACHE=/var/lib/kokoro/hub
+export HUGGINGFACE_HUB_CACHE=/var/lib/kokoro/hub
+
+# Persist config values so kokoro_manage can read them without the env file
+printf '%s' "$KOKORO_PORT"    > /var/lib/kokoro/.port
+printf '%s' "$KOKORO_VOICE"   > /var/lib/kokoro/.voice
+printf '%s' "$server_addr" > /var/lib/kokoro/.server_addr
 
 echo
-echo "Kokoro TTS Docker - https://github.com/hwdsl2/docker-tts"
+echo "Kokoro TTS Docker - https://github.com/hwdsl2/docker-kokoro"
 
-if ! grep -q " /var/lib/tts " /proc/mounts 2>/dev/null; then
+if ! grep -q " /var/lib/kokoro " /proc/mounts 2>/dev/null; then
   echo
-  echo "Note: /var/lib/tts is not mounted. Model files will be lost on"
-  echo "      container removal. Mount a Docker volume at /var/lib/tts"
+  echo "Note: /var/lib/kokoro is not mounted. Model files will be lost on"
+  echo "      container removal. Mount a Docker volume at /var/lib/kokoro"
   echo "      to persist the downloaded model across container restarts."
 fi
 
 echo
 echo "Starting Kokoro TTS server..."
-echo "  Voice:     $TTS_VOICE"
-echo "  Speed:     $TTS_SPEED"
-echo "  Lang:      $TTS_LANG_CODE"
-echo "  Port:      $TTS_PORT"
-if [ -n "$TTS_LOCAL_ONLY" ]; then
+echo "  Voice:     $KOKORO_VOICE"
+echo "  Speed:     $KOKORO_SPEED"
+echo "  Lang:      $KOKORO_LANG_CODE"
+echo "  Port:      $KOKORO_PORT"
+if [ -n "$KOKORO_LOCAL_ONLY" ]; then
   echo "  Mode:      local-only (no HuggingFace downloads)"
 fi
 
-if [ -z "$TTS_LOCAL_ONLY" ]; then
-  if [ ! -d "/var/lib/tts/hub/models--hexgrad--Kokoro-82M" ]; then
+if [ -z "$KOKORO_LOCAL_ONLY" ]; then
+  if [ ! -d "/var/lib/kokoro/hub/models--hexgrad--Kokoro-82M" ]; then
     echo
     echo "Note: Kokoro model not found in cache. It will be downloaded"
     echo "      from HuggingFace on first start (~320 MB)."
@@ -154,25 +157,25 @@ echo
 cleanup() {
   echo
   echo "Stopping Kokoro TTS server..."
-  kill "${TTS_PID:-}" 2>/dev/null
-  wait "${TTS_PID:-}" 2>/dev/null
+  kill "${KOKORO_PID:-}" 2>/dev/null
+  wait "${KOKORO_PID:-}" 2>/dev/null
   exit 0
 }
 trap cleanup INT TERM
 
 # Start the FastAPI server in the background
 cd /opt/src && python3 /opt/src/api_server.py &
-TTS_PID=$!
+KOKORO_PID=$!
 
 # Wait for the server to become ready.
 # Allow up to 300 seconds — first-run model download can take several minutes.
 wait_for_server() {
   local i=0
   while [ "$i" -lt 300 ]; do
-    if ! kill -0 "$TTS_PID" 2>/dev/null; then
+    if ! kill -0 "$KOKORO_PID" 2>/dev/null; then
       return 1
     fi
-    if curl -sf "http://127.0.0.1:${TTS_PORT}/health" >/dev/null 2>&1; then
+    if curl -sf "http://127.0.0.1:${KOKORO_PORT}/health" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -182,11 +185,11 @@ wait_for_server() {
 }
 
 if ! wait_for_server; then
-  if ! kill -0 "$TTS_PID" 2>/dev/null; then
+  if ! kill -0 "$KOKORO_PID" 2>/dev/null; then
     echo "Error: Kokoro TTS server failed to start. Check the container logs for details." >&2
   else
     echo "Error: Kokoro TTS server did not become ready within 300 seconds." >&2
-    kill "$TTS_PID" 2>/dev/null
+    kill "$KOKORO_PID" 2>/dev/null
   fi
   exit 1
 fi
@@ -195,28 +198,28 @@ echo
 echo "==========================================================="
 echo " Kokoro TTS server is ready"
 echo "==========================================================="
-echo " Voice:    $TTS_VOICE"
-echo " Endpoint: http://${server_addr}:${TTS_PORT}"
+echo " Voice:    $KOKORO_VOICE"
+echo " Endpoint: http://${server_addr}:${KOKORO_PORT}"
 echo "==========================================================="
 echo
 echo "Synthesize speech:"
-echo "  curl http://${server_addr}:${TTS_PORT}/v1/audio/speech \\"
+echo "  curl http://${server_addr}:${KOKORO_PORT}/v1/audio/speech \\"
 echo "    -H \"Content-Type: application/json\" \\"
 echo "    -d '{\"model\":\"tts-1\",\"input\":\"Hello world\",\"voice\":\"af_heart\"}' \\"
 echo "    --output speech.mp3"
 echo
-if [ -n "$TTS_API_KEY" ]; then
+if [ -n "$KOKORO_API_KEY" ]; then
   echo "API key authentication is enabled."
-  echo "Include header:  -H \"Authorization: Bearer \$TTS_API_KEY\""
+  echo "Include header:  -H \"Authorization: Bearer \$KOKORO_API_KEY\""
   echo
 fi
-echo "Interactive API docs: http://${server_addr}:${TTS_PORT}/docs"
+echo "Interactive API docs: http://${server_addr}:${KOKORO_PORT}/docs"
 echo
 echo "To set up HTTPS, see: Using a reverse proxy"
-echo "  https://github.com/hwdsl2/docker-tts#using-a-reverse-proxy"
+echo "  https://github.com/hwdsl2/docker-kokoro#using-a-reverse-proxy"
 echo
 echo "Setup complete."
 echo
 
 # Wait for the server process to exit
-wait "$TTS_PID"
+wait "$KOKORO_PID"

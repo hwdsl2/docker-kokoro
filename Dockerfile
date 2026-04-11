@@ -38,17 +38,17 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/* \
     && find /opt/venv -name '*.pyi' -delete \
     && { find /opt/venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true; } \
-    && mkdir -p /var/lib/tts
+    && mkdir -p /var/lib/kokoro
 
 COPY ./run.sh /opt/src/run.sh
 COPY ./manage.sh /opt/src/manage.sh
 COPY ./api_server.py /opt/src/api_server.py
 COPY ./LICENSE.md /opt/src/LICENSE.md
 RUN chmod 755 /opt/src/run.sh /opt/src/manage.sh \
-    && ln -s /opt/src/manage.sh /usr/local/bin/tts_manage
+    && ln -s /opt/src/manage.sh /usr/local/bin/kokoro_manage
 
 EXPOSE 8880/tcp
-VOLUME ["/var/lib/tts"]
+VOLUME ["/var/lib/kokoro"]
 CMD ["/opt/src/run.sh"]
 
 ARG BUILD_DATE
@@ -63,6 +63,6 @@ LABEL maintainer="Lin Song <linsongui@gmail.com>" \
     org.opencontainers.image.authors="Lin Song <linsongui@gmail.com>" \
     org.opencontainers.image.title="Kokoro TTS on Docker" \
     org.opencontainers.image.description="Docker image to run a Kokoro text-to-speech server, providing an OpenAI-compatible audio speech API." \
-    org.opencontainers.image.url="https://github.com/hwdsl2/docker-tts" \
-    org.opencontainers.image.source="https://github.com/hwdsl2/docker-tts" \
-    org.opencontainers.image.documentation="https://github.com/hwdsl2/docker-tts"
+    org.opencontainers.image.url="https://github.com/hwdsl2/docker-kokoro" \
+    org.opencontainers.image.source="https://github.com/hwdsl2/docker-kokoro" \
+    org.opencontainers.image.documentation="https://github.com/hwdsl2/docker-kokoro"

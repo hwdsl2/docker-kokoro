@@ -3,5 +3,5 @@
 .gitignore
 docker-compose.yml
 README*.md
-tts.env
-tts.env.example
+kokoro.env
+kokoro.env.example

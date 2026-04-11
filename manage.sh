@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# https://github.com/hwdsl2/docker-tts
+# https://github.com/hwdsl2/docker-kokoro
 #
 # Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 #
@@ -9,10 +9,10 @@
 
 export PATH="/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-TTS_DATA="/var/lib/tts"
-PORT_FILE="${TTS_DATA}/.port"
-VOICE_FILE="${TTS_DATA}/.voice"
-SERVER_ADDR_FILE="${TTS_DATA}/.server_addr"
+KOKORO_DATA="/var/lib/kokoro"
+PORT_FILE="${KOKORO_DATA}/.port"
+VOICE_FILE="${KOKORO_DATA}/.voice"
+SERVER_ADDR_FILE="${KOKORO_DATA}/.server_addr"
 
 exiterr() { echo "Error: $1" >&2; exit 1; }
 
@@ -24,9 +24,9 @@ show_usage() {
   cat 1>&2 <<'EOF'
 
 Kokoro TTS Docker - Server Management
-https://github.com/hwdsl2/docker-tts
+https://github.com/hwdsl2/docker-kokoro
 
-Usage: docker exec <container> tts_manage [options]
+Usage: docker exec <container> kokoro_manage [options]
 
   --showinfo                           show server info (voice, endpoint, API docs)
   --listvoices                         list all available Kokoro voice IDs
@@ -46,13 +46,13 @@ OpenAI voice aliases (mapped to Kokoro voices):
   onyx  → am_onyx     nova → af_nova    shimmer → af_bella
   ash   → am_michael  coral → af_heart  sage → af_sky  verse → bm_george
 
-To change the active voice, set TTS_VOICE=<voice> in your env file and
+To change the active voice, set KOKORO_VOICE=<voice> in your env file and
 restart the container. No model download is needed — all voices use the
 same Kokoro-82M model file.
 
 Examples:
-  docker exec tts tts_manage --showinfo
-  docker exec tts tts_manage --listvoices
+  docker exec kokoro kokoro_manage --showinfo
+  docker exec kokoro kokoro_manage --listvoices
 
 EOF
   exit "$exit_code"
@@ -67,19 +67,19 @@ check_container() {
 }
 
 load_config() {
-  if [ -z "$TTS_PORT" ]; then
+  if [ -z "$KOKORO_PORT" ]; then
     if [ -f "$PORT_FILE" ]; then
-      TTS_PORT=$(cat "$PORT_FILE")
+      KOKORO_PORT=$(cat "$PORT_FILE")
     else
-      TTS_PORT=8880
+      KOKORO_PORT=8880
     fi
   fi
 
-  if [ -z "$TTS_VOICE" ]; then
+  if [ -z "$KOKORO_VOICE" ]; then
     if [ -f "$VOICE_FILE" ]; then
-      TTS_VOICE=$(cat "$VOICE_FILE")
+      KOKORO_VOICE=$(cat "$VOICE_FILE")
     else
-      TTS_VOICE=af_heart
+      KOKORO_VOICE=af_heart
     fi
   fi
 
@@ -91,8 +91,8 @@ load_config() {
 }
 
 check_server() {
-  if ! curl -sf "http://127.0.0.1:${TTS_PORT}/health" >/dev/null 2>&1; then
-    exiterr "Kokoro TTS server is not responding on port ${TTS_PORT}. Is the container fully started?"
+  if ! curl -sf "http://127.0.0.1:${KOKORO_PORT}/health" >/dev/null 2>&1; then
+    exiterr "Kokoro TTS server is not responding on port ${KOKORO_PORT}. Is the container fully started?"
   fi
 }
 
@@ -137,24 +137,24 @@ do_show_info() {
   echo "==========================================================="
   echo " Kokoro TTS Server"
   echo "==========================================================="
-  echo " Active voice: $TTS_VOICE"
-  echo " Endpoint:     http://${SERVER_ADDR}:${TTS_PORT}"
+  echo " Active voice: $KOKORO_VOICE"
+  echo " Endpoint:     http://${SERVER_ADDR}:${KOKORO_PORT}"
   echo "==========================================================="
   echo
   echo "API endpoints:"
-  echo "  POST http://${SERVER_ADDR}:${TTS_PORT}/v1/audio/speech"
-  echo "  GET  http://${SERVER_ADDR}:${TTS_PORT}/v1/voices"
-  echo "  GET  http://${SERVER_ADDR}:${TTS_PORT}/v1/models"
-  echo "  GET  http://${SERVER_ADDR}:${TTS_PORT}/docs     (interactive docs)"
+  echo "  POST http://${SERVER_ADDR}:${KOKORO_PORT}/v1/audio/speech"
+  echo "  GET  http://${SERVER_ADDR}:${KOKORO_PORT}/v1/voices"
+  echo "  GET  http://${SERVER_ADDR}:${KOKORO_PORT}/v1/models"
+  echo "  GET  http://${SERVER_ADDR}:${KOKORO_PORT}/docs     (interactive docs)"
   echo
   echo "Example synthesis:"
-  echo "  curl http://${SERVER_ADDR}:${TTS_PORT}/v1/audio/speech \\"
+  echo "  curl http://${SERVER_ADDR}:${KOKORO_PORT}/v1/audio/speech \\"
   echo "    -H \"Content-Type: application/json\" \\"
   echo "    -d '{\"model\":\"tts-1\",\"input\":\"Hello world\",\"voice\":\"af_heart\"}' \\"
   echo "    --output speech.mp3"
   echo
   echo "To change the active voice:"
-  echo "  Set TTS_VOICE=<voice_id> in your env file and restart the container."
+  echo "  Set KOKORO_VOICE=<voice_id> in your env file and restart the container."
   echo "  Run '--listvoices' to see all available voice IDs."
   echo
 }
@@ -209,12 +209,12 @@ OpenAI voice aliases (use these if your app sends OpenAI voice names):
   verse → bm_george
 
 Notes:
-  - All voices use the same Kokoro-82M model (~320 MB, cached in /var/lib/tts).
+  - All voices use the same Kokoro-82M model (~320 MB, cached in /var/lib/kokoro).
   - No re-download is required when switching voices.
-  - To change the default voice, set TTS_VOICE=<voice_id> in your env file
+  - To change the default voice, set KOKORO_VOICE=<voice_id> in your env file
     and restart the container.
-  - British voices (bf_*, bm_*) work best with TTS_LANG_CODE=b.
-    American voices (af_*, am_*) work best with TTS_LANG_CODE=a (default).
+  - British voices (bf_*, bm_*) work best with KOKORO_LANG_CODE=b.
+    American voices (af_*, am_*) work best with KOKORO_LANG_CODE=a (default).
 
 EOF
 }

@@ -4,7 +4,7 @@ Kokoro Text-to-Speech API Server
 Provides an OpenAI-compatible /v1/audio/speech endpoint
 powered by Kokoro TTS.
 
-https://github.com/hwdsl2/docker-tts
+https://github.com/hwdsl2/docker-kokoro
 
 Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 
@@ -31,13 +31,13 @@ from pydantic import BaseModel, Field
 # Logging
 # ---------------------------------------------------------------------------
 
-_log_level_str = os.environ.get("TTS_LOG_LEVEL", "INFO").upper()
+_log_level_str = os.environ.get("KOKORO_LOG_LEVEL", "INFO").upper()
 _log_level = getattr(logging, _log_level_str, logging.INFO)
 logging.basicConfig(
     level=_log_level,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
-logger = logging.getLogger("tts_server")
+logger = logging.getLogger("kokoro_server")
 
 # ---------------------------------------------------------------------------
 # Voice mapping — OpenAI voice names → Kokoro voice IDs
@@ -104,7 +104,7 @@ def _resolve_voice(voice: str) -> str:
     if v in _OPENAI_VOICE_MAP:
         return _OPENAI_VOICE_MAP[v]
     # Unknown — fall back to default
-    default = os.environ.get("TTS_VOICE", "af_heart").strip()
+    default = os.environ.get("KOKORO_VOICE", "af_heart").strip()
     logger.warning("Unknown voice '%s', falling back to '%s'", voice, default)
     return default
 
@@ -122,8 +122,8 @@ def _load_model() -> None:
 
     from kokoro import KPipeline  # deferred — keeps import fast
 
-    lang_code = os.environ.get("TTS_LANG_CODE", "a").strip()  # 'a'=American, 'b'=British
-    local_files_only = bool(os.environ.get("TTS_LOCAL_ONLY", "").strip())
+    lang_code = os.environ.get("KOKORO_LANG_CODE", "a").strip()  # 'a'=American, 'b'=British
+    local_files_only = bool(os.environ.get("KOKORO_LOCAL_ONLY", "").strip())
 
     logger.info(
         "Loading Kokoro TTS pipeline | lang_code=%s local_only=%s",
@@ -156,7 +156,7 @@ app = FastAPI(
     title="Kokoro Text-to-Speech",
     description=(
         "OpenAI-compatible text-to-speech API powered by Kokoro TTS.\n\n"
-        "https://github.com/hwdsl2/docker-tts"
+        "https://github.com/hwdsl2/docker-kokoro"
     ),
     version="1.0.0",
     lifespan=_lifespan,
@@ -169,10 +169,10 @@ app = FastAPI(
 
 def _verify_api_key(authorization: Optional[str] = Header(default=None)) -> None:
     """
-    If TTS_API_KEY is set, require a matching Bearer token.
+    If KOKORO_API_KEY is set, require a matching Bearer token.
     If the env var is empty or unset the endpoint is open (no auth).
     """
-    required = os.environ.get("TTS_API_KEY", "").strip()
+    required = os.environ.get("KOKORO_API_KEY", "").strip()
     if not required:
         return
     if not authorization:
@@ -278,7 +278,7 @@ class SpeechRequest(BaseModel):
         description=(
             "Voice to use. Accepts OpenAI voice names (alloy, echo, fable, onyx, nova, shimmer) "
             "or native Kokoro voice IDs (af_heart, bm_george, etc.). "
-            "If omitted, the server default (TTS_VOICE env var) is used. "
+            "If omitted, the server default (KOKORO_VOICE env var) is used. "
             "See GET /v1/voices for all available voices."
         ),
     )
@@ -347,7 +347,7 @@ async def create_speech(
     Supported output formats: mp3, opus, aac, flac, wav, pcm
     """
     if _pipeline is None:
-        raise HTTPException(status_code=503, detail="TTS engine is not loaded yet. Please retry.")
+        raise HTTPException(status_code=503, detail="Kokoro engine is not loaded yet. Please retry.")
 
     # Validate response_format
     if req.response_format not in _FORMAT_MIME:
@@ -360,12 +360,12 @@ async def create_speech(
     if not req.input.strip():
         raise HTTPException(status_code=400, detail="'input' must not be empty.")
 
-    # Resolve voice: per-request value > TTS_VOICE env var > built-in default
-    env_voice = os.environ.get("TTS_VOICE", "af_heart").strip()
+    # Resolve voice: per-request value > KOKORO_VOICE env var > built-in default
+    env_voice = os.environ.get("KOKORO_VOICE", "af_heart").strip()
     voice_id = _resolve_voice(req.voice) if req.voice else _resolve_voice(env_voice)
 
     # Per-request speed overrides env default, env default overrides built-in default
-    env_speed = float(os.environ.get("TTS_SPEED", "1.0"))
+    env_speed = float(os.environ.get("KOKORO_SPEED", "1.0"))
     speed = req.speed if req.speed != 1.0 else env_speed
 
     logger.info(
@@ -403,7 +403,7 @@ async def create_speech(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    port = int(os.environ.get("TTS_PORT", "8880"))
+    port = int(os.environ.get("KOKORO_PORT", "8880"))
     uvicorn.run(
         "api_server:app",
         host="0.0.0.0",
