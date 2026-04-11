@@ -20,7 +20,7 @@ jobs:
 
           cd "$GITHUB_WORKSPACE"
           pwd
-          ls -ld tts.env.example
+          ls -ld kokoro.env.example
 
           export SHELLCHECK_OPTS="-e SC1090,SC1091"
           shellcheck --version

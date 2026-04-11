@@ -34,14 +34,14 @@ jobs:
       - name: Prepare
         run: |
           docker pull python:3.12-slim
-          docker pull "$DOCKER_USER/tts-server"
+          docker pull "$DOCKER_USER/kokoro-server"
       - name: Check
         id: check
         run: |
           BASE_UPDATED=false
 
           base_ts=$(docker inspect --format='{{.Created}}' python:3.12-slim)
-          image_ts=$(docker inspect --format='{{.Created}}' "$DOCKER_USER/tts-server")
+          image_ts=$(docker inspect --format='{{.Created}}' "$DOCKER_USER/kokoro-server")
 
           if [ -n "$base_ts" ] && [ -n "$image_ts" ]; then
             base_ts_s=$(date -d "$base_ts" +%s)

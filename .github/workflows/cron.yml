@@ -11,13 +11,13 @@ jobs:
     secrets:
       CACHE_NAME: ${{ secrets.CACHE_NAME }}
 
-  tts_test:
+  kokoro_test:
     needs: check_update
     if: needs.check_update.outputs.should_test == 'true'
-    uses: ./.github/workflows/tts_test.yml
+    uses: ./.github/workflows/kokoro_test.yml
 
   buildx:
-    needs: [check_update, tts_test]
+    needs: [check_update, kokoro_test]
     if: needs.check_update.outputs.should_update == 'true'
     uses: ./.github/workflows/buildx.yml
     secrets:

@@ -102,7 +102,7 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE"
           pwd
-          ls -ld tts.env.example
+          ls -ld kokoro.env.example
 
           [ "$BUILD_ONLY" = "true" ] && BUILD_ONLY=""
           ts_now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -115,7 +115,7 @@ jobs:
             --build-arg VERSION=latest \
             --cache-from type=local,src="${RUNNER_TEMP}/.buildx-cache" \
             --cache-to type=local,dest="${RUNNER_TEMP}/.buildx-cache-new" \
-            -t "$DOCKER_USER/tts-server:latest" \
+            -t "$DOCKER_USER/kokoro-server:latest" \
             --pull \
             ${BUILD_ONLY:+--push} \
             .
@@ -127,7 +127,7 @@ jobs:
             --build-arg VCS_REF=${GITHUB_SHA::8} \
             --build-arg VERSION=latest \
             --cache-from type=local,src="${RUNNER_TEMP}/.buildx-cache-new" \
-            -t "quay.io/$DOCKER_USER/tts-server:latest" \
+            -t "quay.io/$DOCKER_USER/kokoro-server:latest" \
             --pull \
             ${BUILD_ONLY:+--push} \
             .

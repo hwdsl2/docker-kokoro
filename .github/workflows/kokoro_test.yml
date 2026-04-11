@@ -1,9 +1,9 @@
-name: tts_test
+name: kokoro_test
 
 on: workflow_call
 
 jobs:
-  tts_test:
+  kokoro_test:
     runs-on: ubuntu-24.04
     if: github.repository_owner == 'hwdsl2'
     strategy:
@@ -22,32 +22,32 @@ jobs:
 
           cd "$GITHUB_WORKSPACE"
           pwd
-          ls -ld tts.env.example
+          ls -ld kokoro.env.example
 
           sed -i \
-            -e '/TTS_LOG_LEVEL=/s/# //' \
-            -e '/TTS_VOICE=/s/# //' \
-            tts.env.example
+            -e '/KOKORO_LOG_LEVEL=/s/# //' \
+            -e '/KOKORO_VOICE=/s/# //' \
+            kokoro.env.example
 
           set -x
 
-          docker build -t tts-test .
+          docker build -t kokoro-test .
 
           if [ "$TEST_ID" = "with-env" ]; then
             docker run \
               --name "$TEST_ID" \
               --restart=always \
-              -v tts-test-data:/var/lib/tts \
-              -v ./tts.env.example:/tts.env:ro \
+              -v kokoro-test-data:/var/lib/kokoro \
+              -v ./kokoro.env.example:/kokoro.env:ro \
               -p 8880:8880/tcp \
-              -d tts-test
+              -d kokoro-test
           elif [ "$TEST_ID" = "no-env" ]; then
             docker run \
               --name "$TEST_ID" \
               --restart=always \
-              -v tts-test-data:/var/lib/tts \
+              -v kokoro-test-data:/var/lib/kokoro \
               -p 8880:8880/tcp \
-              -d tts-test
+              -d kokoro-test
           fi
 
           # Wait for server to be ready (up to 300 seconds for model download)
@@ -70,9 +70,9 @@ jobs:
           docker exec "$TEST_ID" curl -sf http://127.0.0.1:8880/v1/models \
             | grep -q '"object"'
 
-          # Test tts_manage commands
-          docker exec "$TEST_ID" tts_manage --showinfo
-          docker exec "$TEST_ID" tts_manage --listvoices
+          # Test kokoro_manage commands
+          docker exec "$TEST_ID" kokoro_manage --showinfo
+          docker exec "$TEST_ID" kokoro_manage --listvoices
 
           # Test speech endpoint (mp3 format)
           curl -sf http://127.0.0.1:8880/v1/audio/speech \
@@ -124,5 +124,5 @@ jobs:
         if: always()
         run: |
           docker rm -f "$TEST_ID" || true
-          docker volume rm tts-test-data || true
-          docker rmi tts-test || true
+          docker volume rm kokoro-test-data || true
+          docker rmi kokoro-test || true

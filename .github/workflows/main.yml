@@ -7,25 +7,25 @@ on:
       - '.github/workflows/main.yml'
       - '.github/workflows/buildx.yml'
       - '.github/workflows/shellcheck.yml'
-      - '.github/workflows/tts_test.yml'
+      - '.github/workflows/kokoro_test.yml'
       - '.dockerignore'
       - 'api_server.py'
       - 'Dockerfile'
       - 'manage.sh'
       - 'run.sh'
-      - 'tts.env.example'
+      - 'kokoro.env.example'
 
 jobs:
   shellcheck:
     if: github.repository_owner == 'hwdsl2'
     uses: ./.github/workflows/shellcheck.yml
 
-  tts_test:
+  kokoro_test:
     if: github.repository_owner == 'hwdsl2'
-    uses: ./.github/workflows/tts_test.yml
+    uses: ./.github/workflows/kokoro_test.yml
 
   buildx:
-    needs: [shellcheck, tts_test]
+    needs: [shellcheck, kokoro_test]
     uses: ./.github/workflows/buildx.yml
     secrets:
       CACHE_NAME: ${{ secrets.CACHE_NAME }}
