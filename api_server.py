@@ -12,10 +12,13 @@ This work is licensed under the MIT License
 See: https://opensource.org/licenses/MIT
 """
 
+import asyncio
 import io
 import logging
 import os
+import struct
 import subprocess
+import threading
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -24,7 +27,7 @@ import numpy as np
 import soundfile as sf
 import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
@@ -111,25 +114,31 @@ def _resolve_voice(voice: str) -> str:
 
 # ---------------------------------------------------------------------------
 # Model — loaded once at startup via the FastAPI lifespan hook
+#
+# Two KPipeline instances are kept: one for American English ('a') and one for
+# British English ('b').  The correct pipeline is selected automatically from
+# the first character of the resolved Kokoro voice ID (af_* / am_* → 'a',
+# bf_* / bm_* → 'b'), so a single server instance correctly handles both
+# accents without requiring a KOKORO_LANG_CODE restart.
+#
+# If KOKORO_LANG_CODE is set in the environment, only that one pipeline is
+# loaded (useful on memory-constrained hosts where only one accent is needed).
 # ---------------------------------------------------------------------------
 
-_pipeline = None   # KPipeline instance
+_pipelines: dict = {}   # lang_code ('a' | 'b') → KPipeline instance
+
+# Serialise all inference calls (batch and streaming) so the KPipeline is
+# never invoked concurrently from multiple async tasks / threads.
+_inference_lock = threading.Lock()
 
 
 def _load_model() -> None:
-    """Import and initialise the Kokoro pipeline from environment config."""
-    global _pipeline
+    """Import and initialise Kokoro KPipeline instance(s) from environment config."""
+    global _pipelines
 
     from kokoro import KPipeline  # deferred — keeps import fast
 
-    lang_code = os.environ.get("KOKORO_LANG_CODE", "a").strip()  # 'a'=American, 'b'=British
     local_files_only = bool(os.environ.get("KOKORO_LOCAL_ONLY", "").strip())
-
-    logger.info(
-        "Loading Kokoro TTS pipeline | lang_code=%s local_only=%s",
-        lang_code, local_files_only,
-    )
-    t0 = time.monotonic()
 
     if local_files_only:
         # HF_HUB_OFFLINE prevents huggingface_hub from making any network requests.
@@ -137,9 +146,40 @@ def _load_model() -> None:
         os.environ["HF_HUB_OFFLINE"] = "1"
         os.environ["HUGGINGFACE_HUB_OFFLINE"] = "1"
 
-    _pipeline = KPipeline(lang_code=lang_code)
+    # Determine which lang_code(s) to load.
+    # KOKORO_LANG_CODE can restrict to a single pipeline to save memory.
+    env_lang = os.environ.get("KOKORO_LANG_CODE", "").strip()
+    codes_to_load = [env_lang] if env_lang else ["a", "b"]
 
-    logger.info("Kokoro TTS pipeline ready in %.1fs", time.monotonic() - t0)
+    for code in codes_to_load:
+        logger.info(
+            "Loading Kokoro TTS pipeline | lang_code=%s local_only=%s",
+            code, local_files_only,
+        )
+        t0 = time.monotonic()
+        _pipelines[code] = KPipeline(lang_code=code)
+        logger.info("Pipeline lang_code='%s' ready in %.1fs", code, time.monotonic() - t0)
+
+
+def _get_pipeline(voice_id: str):
+    """
+    Return the KPipeline instance whose lang_code matches the voice ID prefix.
+    Kokoro voice IDs follow the convention <lang><gender>_<name>, where the
+    first character is the language code: 'a' for American English, 'b' for
+    British English.  If no matching pipeline was loaded (e.g. KOKORO_LANG_CODE
+    restricted loading to one accent), the sole loaded pipeline is returned with
+    a warning.
+    """
+    lang_code = voice_id[0].lower() if voice_id else "a"
+    if lang_code in _pipelines:
+        return _pipelines[lang_code]
+    # Fallback: use whichever pipeline was loaded
+    logger.warning(
+        "No pipeline for lang_code='%s' (voice '%s'); using available pipeline. "
+        "Set KOKORO_LANG_CODE='' to load both 'a' and 'b' pipelines.",
+        lang_code, voice_id,
+    )
+    return next(iter(_pipelines.values()))
 
 
 @asynccontextmanager
@@ -257,6 +297,121 @@ def _audio_to_bytes(samples: np.ndarray, sample_rate: int, fmt: str) -> bytes:
         ) from exc
 
 
+def _wav_streaming_header(sample_rate: int, channels: int = 1) -> bytes:
+    """
+    Build a WAV/RIFF header for streaming use.
+
+    The RIFF chunk size and data sub-chunk size are both set to 0xFFFFFFFF
+    (the maximum uint32 value), which signals to decoders that the length is
+    unknown / continuous.  The actual payload that follows must be signed
+    16-bit little-endian PCM samples (PCM_S16LE).
+
+    Most audio players (ffmpeg, VLC, browser MediaSource, etc.) accept this
+    convention for live/streaming WAV.
+    """
+    bits_per_sample = 16
+    byte_rate       = sample_rate * channels * bits_per_sample // 8
+    block_align     = channels * bits_per_sample // 8
+    _MAX            = 0xFFFFFFFF  # unknown / streaming length
+
+    return struct.pack(
+        "<4sI4s"        # RIFF descriptor
+        "4sIHHIIHH"     # fmt  sub-chunk (16 bytes)
+        "4sI",          # data sub-chunk header
+        b"RIFF", _MAX, b"WAVE",
+        b"fmt ", 16,
+        1,              # PCM audio format
+        channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        bits_per_sample,
+        b"data", _MAX,
+    )
+
+
+# ---------------------------------------------------------------------------
+# SSE-style streaming helper for TTS
+# ---------------------------------------------------------------------------
+
+
+async def _stream_audio(
+    text: str,
+    voice_id: str,
+    speed: float,
+    fmt: str,
+    volume: float = 1.0,
+):
+    """
+    Async generator that yields encoded audio bytes one KPipeline chunk at a
+    time, enabling clients to begin playback before synthesis of the full text
+    has completed.
+
+    Synthesis runs in a thread-pool worker via run_in_executor so the uvicorn
+    event loop stays responsive during the CPU-bound model inference.
+    _inference_lock ensures only one synthesis (batch or streaming) runs at a
+    time, matching the single-worker server model.
+
+    Format notes
+    ------------
+    pcm   — raw little-endian float32 samples; no container overhead.
+    wav   — a streaming WAV header (RIFF sizes = 0xFFFFFFFF) is emitted first,
+            followed by signed 16-bit little-endian PCM sample data.
+    mp3   — each chunk is encoded independently via ffmpeg and yielded; mp3
+            frames are self-synchronising so the concatenated stream is valid.
+    aac   — each chunk encoded as ADTS frames via ffmpeg; ADTS is also
+            self-synchronising and concatenates cleanly.
+    flac / opus — each chunk yields a complete encoded file; these container
+            formats do not concatenate cleanly but are included for completeness.
+    """
+    pipeline = _get_pipeline(voice_id)
+    loop = asyncio.get_running_loop()
+    chunk_queue: asyncio.Queue = asyncio.Queue()
+
+    def _run() -> None:
+        with _inference_lock:
+            try:
+                for _gs, _ps, audio in pipeline(text, voice=voice_id, speed=speed):
+                    if audio is not None and len(audio) > 0:
+                        loop.call_soon_threadsafe(chunk_queue.put_nowait, audio)
+            except Exception as exc:  # noqa: BLE001
+                loop.call_soon_threadsafe(chunk_queue.put_nowait, exc)
+            finally:
+                loop.call_soon_threadsafe(chunk_queue.put_nowait, None)  # sentinel
+
+    loop.run_in_executor(None, _run)
+
+    # Emit WAV streaming header before the first audio chunk
+    if fmt == "wav":
+        yield _wav_streaming_header(sample_rate=24000)
+
+    while True:
+        item = await chunk_queue.get()
+        if item is None:
+            break
+        if isinstance(item, Exception):
+            logger.error("Streaming synthesis error: %s", item)
+            return
+
+        # Apply volume multiplier before encoding
+        if volume != 1.0:
+            item = (item * volume).clip(-1.0, 1.0)
+
+        if fmt == "pcm":
+            yield item.astype(np.float32).tobytes()
+        elif fmt == "wav":
+            # Convert float32 [-1, 1] → signed int16, emit raw PCM samples
+            s16 = (item * 32767.0).clip(-32768, 32767).astype(np.int16)
+            yield s16.tobytes()
+        else:
+            # mp3 / aac / opus / flac — encode via ffmpeg and yield
+            try:
+                yield _audio_to_bytes(item, 24000, fmt)
+            except Exception as exc:
+                logger.error("Streaming chunk encoding to %s failed: %s", fmt, exc)
+                return
+
+
 # ---------------------------------------------------------------------------
 # Request / response models
 # ---------------------------------------------------------------------------
@@ -291,6 +446,28 @@ class SpeechRequest(BaseModel):
         ge=0.25,
         le=4.0,
         description="Speech speed multiplier. Range: 0.25 (slowest) to 4.0 (fastest).",
+    )
+    stream: bool = Field(
+        default=False,
+        description=(
+            "Stream audio chunks as they are synthesized. "
+            "When true, the response body is a continuous audio stream delivered "
+            "via chunked transfer encoding — playback can begin before synthesis "
+            "of the full text completes, reducing time-to-first-audio. "
+            "pcm and wav are the most efficient streaming formats; mp3 and aac "
+            "also stream cleanly. response_format is honoured for all formats."
+        ),
+    )
+    volume_multiplier: float = Field(
+        default=1.0,
+        ge=0.1,
+        le=2.0,
+        description=(
+            "Output volume multiplier applied to the synthesized audio before encoding. "
+            "Range: 0.1 (quieter) to 2.0 (louder). Default: 1.0 (no change). "
+            "Values above 1.0 amplify the signal; values below 1.0 attenuate it. "
+            "Samples are clipped to [-1, 1] after scaling to prevent distortion."
+        ),
     )
 
 
@@ -345,8 +522,13 @@ async def create_speech(
     Accepts the same JSON body and returns binary audio in the requested format.
 
     Supported output formats: mp3, opus, aac, flac, wav, pcm
+
+    When stream=true the response uses chunked transfer encoding and audio
+    playback can begin before the full text has been synthesized.  pcm and wav
+    are the most efficient streaming formats; mp3 and aac also stream cleanly
+    because their container frames are self-synchronising.
     """
-    if _pipeline is None:
+    if not _pipelines:
         raise HTTPException(status_code=503, detail="Kokoro engine is not loaded yet. Please retry.")
 
     # Validate response_format
@@ -368,24 +550,48 @@ async def create_speech(
     env_speed = float(os.environ.get("KOKORO_SPEED", "1.0"))
     speed = req.speed if req.speed != 1.0 else env_speed
 
+    volume = req.volume_multiplier
+
     logger.info(
-        "Synthesizing %d chars | voice=%s speed=%.2f format=%s",
-        len(req.input), voice_id, speed, req.response_format,
+        "Synthesizing %d chars | voice=%s speed=%.2f format=%s stream=%s volume=%.2f",
+        len(req.input), voice_id, speed, req.response_format, req.stream, volume,
     )
 
-    try:
-        # Collect all audio chunks from the generator
-        audio_chunks = []
-        for _gs, _ps, audio in _pipeline(req.input, voice=voice_id, speed=speed):
-            if audio is not None and len(audio) > 0:
-                audio_chunks.append(audio)
+    # ------------------------------------------------------------------
+    # Streaming path — synthesis runs in a thread; audio chunks are
+    # yielded to the client as soon as each sentence is ready.
+    # ------------------------------------------------------------------
+    if req.stream:
+        return StreamingResponse(
+            _stream_audio(req.input, voice_id, speed, req.response_format, volume),
+            media_type=_FORMAT_MIME[req.response_format],
+            headers={
+                "X-Accel-Buffering": "no",   # disable nginx proxy buffering
+                "Cache-Control": "no-cache",
+            },
+        )
 
+    # ------------------------------------------------------------------
+    # Batch path — inference runs in a thread-pool worker so the event
+    # loop remains free to handle health checks and other requests while
+    # the CPU-bound model runs.
+    # ------------------------------------------------------------------
+    def _run_batch() -> bytes:
+        _pipeline = _get_pipeline(voice_id)
+        with _inference_lock:
+            audio_chunks = []
+            for _gs, _ps, audio in _pipeline(req.input, voice=voice_id, speed=speed):
+                if audio is not None and len(audio) > 0:
+                    audio_chunks.append(audio)
         if not audio_chunks:
             raise ValueError("Kokoro pipeline produced no audio output.")
-
         combined = np.concatenate(audio_chunks) if len(audio_chunks) > 1 else audio_chunks[0]
-        audio_bytes = _audio_to_bytes(combined, sample_rate=24000, fmt=req.response_format)
+        if volume != 1.0:
+            combined = (combined * volume).clip(-1.0, 1.0)
+        return _audio_to_bytes(combined, sample_rate=24000, fmt=req.response_format)
 
+    try:
+        audio_bytes = await asyncio.get_running_loop().run_in_executor(None, _run_batch)
     except HTTPException:
         raise
     except Exception as exc:
@@ -409,5 +615,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         log_level=_log_level_str.lower(),
-        workers=1,  # single worker — pipeline is loaded into process memory
+        workers=1,  # single worker — pipelines are loaded into process memory
     )
