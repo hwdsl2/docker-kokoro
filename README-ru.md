@@ -1,10 +1,12 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# Kokoro TTS на Docker
+# Kokoro — синтез речи на Docker
 
 [![Статус сборки](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Лицензия: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
 Docker-образ для запуска сервера синтеза речи [Kokoro](https://github.com/hexgrad/kokoro). Предоставляет API синтеза речи, совместимый с OpenAI. Основан на Debian (python:3.12-slim). Разработан для простого, приватного, самостоятельно размещаемого развёртывания.
+
+**Возможности:**
 
 - Совместимый с OpenAI эндпоинт `POST /v1/audio/speech` — любое приложение, использующее OpenAI TTS API, переключается с изменением одной строки
 - 20+ высококачественных голосов: американский и британский английский, мужские и женские
@@ -18,6 +20,7 @@ Docker-образ для запуска сервера синтеза речи [
 - Мультиархитектурный: `linux/amd64`, `linux/arm64`
 
 **Также доступно:**
+
 - ИИ/Аудио: [Whisper (STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md), [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md), [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
 
@@ -36,9 +39,9 @@ docker run \
     -d hwdsl2/kokoro-server
 ```
 
-**Примечание:** Для развёртываний, доступных из интернета, **настоятельно рекомендуется** использовать [обратный прокси](#использование-обратного-прокси) для добавления HTTPS. В этом случае также замените `-p 8880:8880` на `-p 127.0.0.1:8880:8880` в команде `docker run`, чтобы предотвратить прямой доступ к незашифрованному порту.
+**Важно:** Этот образ требует **более 1 ГБ доступной оперативной памяти** из-за среды выполнения PyTorch и модели Kokoro. Системы с 1 ГБ общей оперативной памяти не поддерживаются。
 
-**Примечание:** Для работы этого образа требуется не менее ~1 ГБ свободной оперативной памяти из-за использования PyTorch. На сервере с общим объёмом ОЗУ 1 ГБ образ может работать нестабильно.
+**Примечание:** Для развёртываний, доступных из интернета, **настоятельно рекомендуется** использовать [обратный прокси](#использование-обратного-прокси) для добавления HTTPS. В этом случае также замените `-p 8880:8880` на `-p 127.0.0.1:8880:8880` в команде `docker run`, чтобы предотвратить прямой доступ к незашифрованному порту.
 
 Модель Kokoro (~320 МБ) загружается и кешируется при первом запуске. Проверьте журналы, чтобы убедиться, что сервер готов:
 
@@ -46,7 +49,7 @@ docker run \
 docker logs kokoro
 ```
 
-После появления сообщения «Kokoro TTS server is ready» синтезируйте первый аудиофайл:
+После появления сообщения «Kokoro text-to-speech server is ready» синтезируйте первый аудиофайл:
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/audio/speech \
@@ -59,7 +62,7 @@ curl http://IP_вашего_сервера:8880/v1/audio/speech \
 
 - Сервер Linux (локальный или облачный) с установленным Docker
 - Поддерживаемые архитектуры: `amd64` (x86_64), `arm64` (например, Raspberry Pi 4/5, AWS Graviton)
-- Минимальная свободная ОЗУ: ~1 ГБ (модель ~320 МБ; среде выполнения PyTorch требуется дополнительная память)
+- Минимальная свободная ОЗУ: более 1 ГБ (модель ~320 МБ; среде выполнения PyTorch требуется дополнительная память)
 - Интернет-доступ для первоначальной загрузки модели (после этого модель кешируется локально). Не требуется при использовании `KOKORO_LOCAL_ONLY=true` с предварительно кешированной моделью.
 
 Для развёртываний, доступных из интернета, см. [Использование обратного прокси](#использование-обратного-прокси).

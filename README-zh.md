@@ -6,6 +6,8 @@
 
 一个用于运行 [Kokoro](https://github.com/hexgrad/kokoro) 文字转语音服务器的 Docker 镜像。提供与 OpenAI 兼容的音频语音 API。基于 Debian（python:3.12-slim）。专为简单、私密、自托管而设计。
 
+**功能特性：**
+
 - 兼容 OpenAI 的 `POST /v1/audio/speech` 接口 —— 已使用 OpenAI TTS API 的应用只需修改一行即可切换
 - 20+ 种高质量语音：美式英语和英式英语，男女均有
 - 同时支持 OpenAI 语音名称（`alloy`、`nova`、`echo` 等）和原生 Kokoro 语音 ID（`af_heart`、`bm_george` 等）
@@ -18,6 +20,7 @@
 - 多架构：`linux/amd64`、`linux/arm64`
 
 **另提供：**
+
 - AI/音频：[Whisper (STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)
 
@@ -36,9 +39,9 @@ docker run \
     -d hwdsl2/kokoro-server
 ```
 
-**注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 8880:8880` 替换为 `-p 127.0.0.1:8880:8880`，以防止从外部直接访问未加密端口。
+**重要：** 由于包含 PyTorch 运行时和 Kokoro 模型，该镜像需要 **超过 1 GB 的可用内存**。仅有 1 GB 总内存的系统不受支持。
 
-**注：** 本镜像由于使用 PyTorch 运行时，至少需要约 1 GB 可用内存。在总内存仅 1 GB 的服务器上可能无法稳定运行。
+**注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 8880:8880` 替换为 `-p 127.0.0.1:8880:8880`，以防止从外部直接访问未加密端口。
 
 Kokoro 模型（约 320 MB）将在首次启动时自动下载并缓存。查看日志确认服务器已就绪：
 
@@ -46,7 +49,7 @@ Kokoro 模型（约 320 MB）将在首次启动时自动下载并缓存。查看
 docker logs kokoro
 ```
 
-看到"Kokoro TTS server is ready"后，即可合成您的第一个音频文件：
+看到 "Kokoro text-to-speech server is ready" 后，即可合成您的第一个音频文件：
 
 ```bash
 curl http://您的服务器IP:8880/v1/audio/speech \
@@ -59,7 +62,7 @@ curl http://您的服务器IP:8880/v1/audio/speech \
 
 - 安装了 Docker 的 Linux 服务器（本地或云端）
 - 支持的架构：`amd64`（x86_64）、`arm64`（例如 Raspberry Pi 4/5、AWS Graviton）
-- 最低可用内存：约 1 GB（模型约 320 MB；PyTorch 运行时需要额外内存）
+- 最低可用内存：1 GB 以上（模型约 320 MB；PyTorch 运行时需要额外内存）
 - 首次下载模型需要互联网访问（之后模型会缓存在本地）。若使用预缓存模型并设置 `KOKORO_LOCAL_ONLY=true` 则不需要。
 
 对于面向互联网的部署，请参阅[使用反向代理](#使用反向代理)以添加 HTTPS。

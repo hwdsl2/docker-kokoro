@@ -6,6 +6,8 @@
 
 一個用於執行 [Kokoro](https://github.com/hexgrad/kokoro) 文字轉語音伺服器的 Docker 映像。提供與 OpenAI 相容的音訊語音 API。基於 Debian（python:3.12-slim）。專為簡單、私密、自架伺服器而設計。
 
+**功能特性：**
+
 - 相容 OpenAI 的 `POST /v1/audio/speech` 端點 —— 已使用 OpenAI TTS API 的應用只需修改一行即可切換
 - 20+ 種高品質語音：美式英語和英式英語，男女均有
 - 同時支援 OpenAI 語音名稱（`alloy`、`nova`、`echo` 等）和原生 Kokoro 語音 ID（`af_heart`、`bm_george` 等）
@@ -18,6 +20,7 @@
 - 多架構：`linux/amd64`、`linux/arm64`
 
 **另提供：**
+
 - AI/音訊：[Whisper (STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md)
 
@@ -36,9 +39,9 @@ docker run \
     -d hwdsl2/kokoro-server
 ```
 
-**注：** 如需面向網際網路的部署，**強烈建議**使用[反向代理](#使用反向代理)來新增 HTTPS。此時，還應將上述 `docker run` 指令中的 `-p 8880:8880` 替換為 `-p 127.0.0.1:8880:8880`，以防止從外部直接存取未加密連接埠。
+**重要：** 由於包含 PyTorch 執行階段與 Kokoro 模型，該映像需要 **超過 1 GB 的可用記憶體**。僅有 1 GB 總記憶體的系統不支援。
 
-**注：** 本映像檔由於使用 PyTorch 執行時，至少需要約 1 GB 可用記憶體。在總記憶體僅 1 GB 的伺服器上可能無法穩定運行。
+**注：** 如需面向網際網路的部署，**強烈建議**使用[反向代理](#使用反向代理)來新增 HTTPS。此時，還應將上述 `docker run` 指令中的 `-p 8880:8880` 替換為 `-p 127.0.0.1:8880:8880`，以防止從外部直接存取未加密連接埠。
 
 Kokoro 模型（約 320 MB）將在首次啟動時自動下載並快取。查看日誌確認伺服器已就緒：
 
@@ -46,7 +49,7 @@ Kokoro 模型（約 320 MB）將在首次啟動時自動下載並快取。查看
 docker logs kokoro
 ```
 
-看到「Kokoro TTS server is ready」後，即可合成您的第一個音訊檔案：
+看到「Kokoro text-to-speech server is ready」後，即可合成您的第一個音訊檔案：
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
@@ -59,7 +62,7 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 
 - 已安裝 Docker 的 Linux 伺服器（本機或雲端）
 - 支援的架構：`amd64`（x86_64）、`arm64`（例如 Raspberry Pi 4/5、AWS Graviton）
-- 最低可用記憶體：約 1 GB（模型約 320 MB；PyTorch 執行時需要額外記憶體）
+- 最低可用記憶體：1 GB 以上（模型約 320 MB；PyTorch 執行時需要額外記憶體）
 - 首次下載模型需要網際網路存取（之後模型會快取在本機）。若使用預快取模型並設定 `KOKORO_LOCAL_ONLY=true` 則不需要。
 
 對於面向網際網路的部署，請參閱[使用反向代理](#使用反向代理)以新增 HTTPS。
