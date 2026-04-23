@@ -118,6 +118,18 @@ docker run \
 
 `env` 檔案以綁定掛載方式傳入容器，每次重新啟動時自動生效，無需重新建立容器。
 
+也可透過 `--env-file` 傳入：
+
+```bash
+docker run \
+    --name kokoro \
+    --restart=always \
+    -v kokoro-data:/var/lib/kokoro \
+    -p 8880:8880 \
+    --env-file=kokoro.env \
+    -d hwdsl2/kokoro-server
+```
+
 ## 使用 docker-compose
 
 ```bash
@@ -180,6 +192,25 @@ Content-Type: application/json
 curl http://您的伺服器IP:8880/v1/audio/speech \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"敏捷的棕色狐狸跳過了懶惰的狗。","voice":"af_heart"}' \
+    --output speech.mp3
+```
+
+使用不同語音和格式：
+
+```bash
+curl http://您的伺服器IP:8880/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
+    --output speech.wav
+```
+
+使用 API 金鑰驗證：
+
+```bash
+curl http://您的伺服器IP:8880/v1/audio/speech \
+    -H "Authorization: Bearer your_api_key" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
 ```
 
@@ -307,6 +338,36 @@ docker restart kokoro
 
 - **`kokoro:8880`** —— 若反向代理作為容器執行在與 TTS 伺服器**相同的 Docker 網路**中。
 - **`127.0.0.1:8880`** —— 若反向代理執行在**主機上**且埠 `8880` 已發佈。
+
+**使用 [Caddy](https://caddyserver.com/docs/)（[Docker 映像](https://hub.docker.com/_/caddy)）的範例**（透過 Let's Encrypt 自動申請 TLS，反向代理在同一 Docker 網路中）：
+
+`Caddyfile`：
+```
+kokoro.example.com {
+  reverse_proxy kokoro:8880
+}
+```
+
+**使用 nginx 的範例**（反向代理執行在主機上）：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name kokoro.example.com;
+
+    ssl_certificate     /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass         http://127.0.0.1:8880;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+}
+```
 
 面向公開網際網路時，請在 `env` 檔案中設定 `KOKORO_API_KEY`。
 

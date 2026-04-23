@@ -118,6 +118,18 @@ docker run \
 
 Файл env монтируется в контейнер, изменения применяются при каждом перезапуске без пересоздания контейнера.
 
+Либо передайте через `--env-file`:
+
+```bash
+docker run \
+    --name kokoro \
+    --restart=always \
+    -v kokoro-data:/var/lib/kokoro \
+    -p 8880:8880 \
+    --env-file=kokoro.env \
+    -d hwdsl2/kokoro-server
+```
+
 ## Использование docker-compose
 
 ```bash
@@ -180,6 +192,25 @@ Content-Type: application/json
 curl http://IP_вашего_сервера:8880/v1/audio/speech \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Быстрая коричневая лиса прыгает через ленивую собаку.","voice":"af_heart"}' \
+    --output speech.mp3
+```
+
+С другим голосом и форматом:
+
+```bash
+curl http://IP_вашего_сервера:8880/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
+    --output speech.wav
+```
+
+С аутентификацией по API-ключу:
+
+```bash
+curl http://IP_вашего_сервера:8880/v1/audio/speech \
+    -H "Authorization: Bearer your_api_key" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
 ```
 
@@ -307,6 +338,36 @@ docker restart kokoro
 
 - **`kokoro:8880`** — если обратный прокси работает как контейнер в **той же сети Docker**, что и TTS-сервер.
 - **`127.0.0.1:8880`** — если обратный прокси работает **на хосте** и порт `8880` опубликован.
+
+**Пример с [Caddy](https://caddyserver.com/docs/) ([Docker-образ](https://hub.docker.com/_/caddy))** (автоматический TLS через Let's Encrypt, обратный прокси в той же Docker-сети):
+
+`Caddyfile`:
+```
+kokoro.example.com {
+  reverse_proxy kokoro:8880
+}
+```
+
+**Пример с nginx** (обратный прокси на хосте):
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name kokoro.example.com;
+
+    ssl_certificate     /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass         http://127.0.0.1:8880;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+}
+```
 
 При доступе сервера из публичного интернета установите `KOKORO_API_KEY` в файле `env`.
 
