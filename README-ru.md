@@ -14,6 +14,7 @@ Docker-образ для запуска сервера синтеза речи [
 - Аудио остаётся на вашем сервере — данные не передаются третьим лицам
 - Все основные форматы вывода: `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`
 - Поддержка стриминга — установите `stream=true`, чтобы получать аудио по мере синтеза каждого предложения, сокращая время до первого звука
+- Аппаратное ускорение на GPU NVIDIA (CUDA) для более быстрого вывода (тег образа `:cuda`)
 - Офлайн/изолированный режим — работа без интернета с предварительно кешированной моделью (`KOKORO_LOCAL_ONLY`)
 - Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml)
 - Постоянный кеш модели через том Docker
@@ -38,6 +39,25 @@ docker run \
     -p 8880:8880 \
     -d hwdsl2/kokoro-server
 ```
+
+<details>
+<summary><strong>Быстрый старт с GPU (NVIDIA CUDA)</strong></summary>
+
+Если у вас есть GPU NVIDIA, используйте образ `:cuda` для аппаратного ускорения:
+
+```bash
+docker run \
+    --name kokoro \
+    --restart=always \
+    --gpus=all \
+    -v kokoro-data:/var/lib/kokoro \
+    -p 8880:8880 \
+    -d hwdsl2/kokoro-server:cuda
+```
+
+**Требования:** GPU NVIDIA, [драйвер NVIDIA](https://www.nvidia.com/en-us/drivers/) 535+, а также [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), установленные на хосте. Образ `:cuda` поддерживает только `linux/amd64`.
+
+</details>
 
 **Важно:** Этот образ требует не менее 1,5 ГБ свободной оперативной памяти из-за среды выполнения PyTorch и модели Kokoro. Системы с 1 ГБ ОЗУ и менее не поддерживаются.
 
@@ -65,6 +85,13 @@ curl http://IP_вашего_сервера:8880/v1/audio/speech \
 - Минимальная свободная ОЗУ: ~1,5 ГБ (модель ~320 МБ; среде выполнения PyTorch требуется дополнительная память)
 - Интернет-доступ для первоначальной загрузки модели (после этого модель кешируется локально). Не требуется при использовании `KOKORO_LOCAL_ONLY=true` с предварительно кешированной моделью.
 
+**Требования для ускорения на GPU (образ `:cuda`):**
+
+- GPU NVIDIA с поддержкой CUDA (Compute Capability 6.0+)
+- [Драйвер NVIDIA](https://www.nvidia.com/en-us/drivers/) версии 535 или выше, установленный на хосте
+- Установленный [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+- Образ `:cuda` поддерживает только `linux/amd64`
+
 Для развёртываний, доступных из интернета, см. [Использование обратного прокси](#использование-обратного-прокси).
 
 ## Скачать
@@ -75,6 +102,12 @@ curl http://IP_вашего_сервера:8880/v1/audio/speech \
 docker pull hwdsl2/kokoro-server
 ```
 
+Для ускорения на GPU NVIDIA загрузите тег `:cuda`:
+
+```bash
+docker pull hwdsl2/kokoro-server:cuda
+```
+
 Либо скачайте из [Quay.io](https://quay.io/repository/hwdsl2/kokoro-server):
 
 ```bash
@@ -82,7 +115,7 @@ docker pull quay.io/hwdsl2/kokoro-server
 docker image tag quay.io/hwdsl2/kokoro-server hwdsl2/kokoro-server
 ```
 
-Поддерживаемые платформы: `linux/amd64` и `linux/arm64`.
+Поддерживаемые платформы: `linux/amd64` и `linux/arm64`. Тег `:cuda` поддерживает только `linux/amd64`.
 
 ## Переменные окружения
 
@@ -162,9 +195,48 @@ volumes:
 
 **Примечание:** Для развёртываний, доступных из интернета, настоятельно рекомендуется добавить HTTPS с помощью [обратного прокси](#использование-обратного-прокси). В этом случае замените `"8880:8880/tcp"` на `"127.0.0.1:8880:8880/tcp"` в `docker-compose.yml`, чтобы предотвратить прямой доступ к незашифрованному порту. Установите `KOKORO_API_KEY` в файле `env`, когда сервер доступен из публичного интернета.
 
+<details>
+<summary><strong>Использование docker-compose с GPU (NVIDIA CUDA)</strong></summary>
+
+Для развёртывания с GPU предусмотрен отдельный файл `docker-compose.cuda.yml`:
+
+```bash
+cp kokoro.env.example kokoro.env
+# Отредактируйте kokoro.env при необходимости, затем:
+docker compose -f docker-compose.cuda.yml up -d
+docker logs kokoro
+```
+
+Пример `docker-compose.cuda.yml` (уже включён в проект):
+
+```yaml
+services:
+  kokoro:
+    image: hwdsl2/kokoro-server:cuda
+    container_name: kokoro
+    restart: always
+    ports:
+      - "8880:8880/tcp"  # Для хост-обратного прокси замените на "127.0.0.1:8880:8880/tcp"
+    volumes:
+      - kokoro-data:/var/lib/kokoro
+      - ./kokoro.env:/kokoro.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  kokoro-data:
+```
+
+</details>
+
 ## Справочник API
 
-API полностью совместим с [эндпоинтом синтеза речи OpenAI](https://platform.openai.com/docs/api-reference/audio/createSpeech). Любое приложение, уже вызывающее `https://api.openai.com/v1/audio/speech`, может переключиться на самостоятельно размещённый сервер, установив:
+API полностью совместим с [эндпоинтом синтеза речи OpenAI](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create). Любое приложение, уже вызывающее `https://api.openai.com/v1/audio/speech`, может переключиться на самостоятельно размещённый сервер, установив:
 
 ```
 OPENAI_BASE_URL=http://IP_вашего_сервера:8880
@@ -480,7 +552,8 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 - Базовый образ: `python:3.12-slim` (Debian)
 - Среда выполнения: Python 3 (виртуальное окружение в `/opt/venv`)
-- TTS-движок: [Kokoro](https://github.com/hexgrad/kokoro) (Kokoro-82M, Apache 2.0) с CPU-бэкендом PyTorch
+- Размер образа: ~515 МБ (`:latest`), ~4,5 ГБ (`:cuda`)
+- TTS-движок: [Kokoro](https://github.com/hexgrad/kokoro) (Kokoro-82M, Apache 2.0) с PyTorch (CPU и CUDA GPU)
 - API-фреймворк: [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - Аудиокодирование: [soundfile](https://github.com/bastibe/python-soundfile) (wav/flac), [ffmpeg](https://ffmpeg.org/) (mp3/aac/opus)
 - Директория данных: `/var/lib/kokoro` (Docker-том)

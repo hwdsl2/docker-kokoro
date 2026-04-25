@@ -14,6 +14,7 @@ Docker image to run a [Kokoro](https://github.com/hexgrad/kokoro) text-to-speech
 - Audio stays on your server — no data sent to third parties
 - All major output formats supported: `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`
 - Streaming support — set `stream=true` to receive audio as each sentence is synthesized, reducing time-to-first-audio
+- NVIDIA GPU (CUDA) acceleration for faster inference (`:cuda` image tag)
 - Offline/air-gapped mode — run without internet access using pre-cached model (`KOKORO_LOCAL_ONLY`)
 - Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml)
 - Persistent model cache via a Docker volume
@@ -38,6 +39,25 @@ docker run \
     -p 8880:8880 \
     -d hwdsl2/kokoro-server
 ```
+
+<details>
+<summary><strong>GPU quick start (NVIDIA CUDA)</strong></summary>
+
+If you have an NVIDIA GPU, use the `:cuda` image for hardware-accelerated inference:
+
+```bash
+docker run \
+    --name kokoro \
+    --restart=always \
+    --gpus=all \
+    -v kokoro-data:/var/lib/kokoro \
+    -p 8880:8880 \
+    -d hwdsl2/kokoro-server:cuda
+```
+
+**Requirements:** NVIDIA GPU, [NVIDIA driver](https://www.nvidia.com/en-us/drivers/) 535+, and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host. The `:cuda` image is `linux/amd64` only.
+
+</details>
 
 **Important:** This image requires at least 1.5 GB of available RAM due to the PyTorch runtime and Kokoro model. Systems with 1 GB or less of total RAM are not supported.
 
@@ -65,6 +85,13 @@ curl http://your_server_ip:8880/v1/audio/speech \
 - Minimum RAM: ~1.5 GB free (model is ~320 MB; PyTorch runtime uses additional memory)
 - Internet access for the initial model download (the model is cached locally afterwards). Not required if using `KOKORO_LOCAL_ONLY=true` with a pre-cached model.
 
+**For GPU acceleration (`:cuda` image):**
+
+- NVIDIA GPU with CUDA support (Compute Capability 6.0+)
+- [NVIDIA driver](https://www.nvidia.com/en-us/drivers/) 535 or later installed on the host
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed
+- The `:cuda` image supports `linux/amd64` only
+
 For internet-facing deployments, see [Using a reverse proxy](#using-a-reverse-proxy) to add HTTPS.
 
 ## Download
@@ -75,6 +102,12 @@ Get the trusted build from the [Docker Hub registry](https://hub.docker.com/r/hw
 docker pull hwdsl2/kokoro-server
 ```
 
+For NVIDIA GPU acceleration, pull the `:cuda` tag instead:
+
+```bash
+docker pull hwdsl2/kokoro-server:cuda
+```
+
 Alternatively, you may download from [Quay.io](https://quay.io/repository/hwdsl2/kokoro-server):
 
 ```bash
@@ -82,7 +115,7 @@ docker pull quay.io/hwdsl2/kokoro-server
 docker image tag quay.io/hwdsl2/kokoro-server hwdsl2/kokoro-server
 ```
 
-Supported platforms: `linux/amd64` and `linux/arm64`.
+Supported platforms: `linux/amd64` and `linux/arm64`. The `:cuda` tag supports `linux/amd64` only.
 
 ## Environment variables
 
@@ -162,9 +195,48 @@ volumes:
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8880:8880/tcp"` to `"127.0.0.1:8880:8880/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port. Set `KOKORO_API_KEY` in your `env` file when the server is accessible from the public internet.
 
+<details>
+<summary><strong>Using docker-compose with GPU (NVIDIA CUDA)</strong></summary>
+
+A separate `docker-compose.cuda.yml` is provided for GPU deployments:
+
+```bash
+cp kokoro.env.example kokoro.env
+# Edit kokoro.env as needed, then:
+docker compose -f docker-compose.cuda.yml up -d
+docker logs kokoro
+```
+
+Example `docker-compose.cuda.yml` (already included):
+
+```yaml
+services:
+  kokoro:
+    image: hwdsl2/kokoro-server:cuda
+    container_name: kokoro
+    restart: always
+    ports:
+      - "8880:8880/tcp"  # For a host-based reverse proxy, change to "127.0.0.1:8880:8880/tcp"
+    volumes:
+      - kokoro-data:/var/lib/kokoro
+      - ./kokoro.env:/kokoro.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  kokoro-data:
+```
+
+</details>
+
 ## API reference
 
-The API is fully compatible with [OpenAI's text-to-speech endpoint](https://platform.openai.com/docs/api-reference/audio/createSpeech). Any application already calling `https://api.openai.com/v1/audio/speech` can switch to self-hosted by setting:
+The API is fully compatible with [OpenAI's text-to-speech endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create). Any application already calling `https://api.openai.com/v1/audio/speech` can switch to self-hosted by setting:
 
 ```
 OPENAI_BASE_URL=http://your_server_ip:8880
@@ -495,7 +567,8 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 - Base image: `python:3.12-slim` (Debian)
 - Runtime: Python 3 (virtual environment at `/opt/venv`)
-- TTS engine: [Kokoro](https://github.com/hexgrad/kokoro) (Kokoro-82M, Apache 2.0) with PyTorch CPU backend
+- Image size: ~515 MB (`:latest`), ~4.5 GB (`:cuda`)
+- TTS engine: [Kokoro](https://github.com/hexgrad/kokoro) (Kokoro-82M, Apache 2.0) with PyTorch (CPU and CUDA GPU)
 - API framework: [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - Audio encoding: [soundfile](https://github.com/bastibe/python-soundfile) (wav/flac), [ffmpeg](https://ffmpeg.org/) (mp3/aac/opus)
 - Data directory: `/var/lib/kokoro` (Docker volume)

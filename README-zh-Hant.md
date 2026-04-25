@@ -14,6 +14,7 @@
 - 音訊保留在您的伺服器上 —— 不向第三方傳送資料
 - 支援所有主流輸出格式：`mp3`、`wav`、`flac`、`opus`、`aac`、`pcm`
 - 串流傳輸支援 —— 設定 `stream=true` 可在每句話合成完成後立即接收音訊，減少首次出聲的等待時間
+- NVIDIA GPU（CUDA）加速推理（`:cuda` 映像標籤）
 - 離線/氣隙模式 —— 使用預快取模型無需存取網際網路（`KOKORO_LOCAL_ONLY`）
 - 透過 [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) 自動建置和發佈
 - 透過 Docker 資料捲持久化模型快取
@@ -38,6 +39,25 @@ docker run \
     -p 8880:8880 \
     -d hwdsl2/kokoro-server
 ```
+
+<details>
+<summary><strong>GPU 快速開始（NVIDIA CUDA）</strong></summary>
+
+若您有 NVIDIA GPU，可使用 `:cuda` 映像進行硬體加速推理：
+
+```bash
+docker run \
+    --name kokoro \
+    --restart=always \
+    --gpus=all \
+    -v kokoro-data:/var/lib/kokoro \
+    -p 8880:8880 \
+    -d hwdsl2/kokoro-server:cuda
+```
+
+**需求：** NVIDIA GPU、已在主機上安裝 [NVIDIA 驅動程式](https://www.nvidia.com/en-us/drivers/) 535+ 以及 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)。`:cuda` 映像僅支援 `linux/amd64`。
+
+</details>
 
 **重要：** 由於包含 PyTorch 執行階段與 Kokoro 模型，該映像需要至少 1.5 GB 可用記憶體。總記憶體為 1 GB 或更少的系統不受支援。
 
@@ -65,6 +85,13 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 - 最低可用記憶體：約 1.5 GB（模型約 320 MB；PyTorch 執行時需要額外記憶體）
 - 首次下載模型需要網際網路存取（之後模型會快取在本機）。若使用預快取模型並設定 `KOKORO_LOCAL_ONLY=true` 則不需要。
 
+**GPU 加速（`:cuda` 映像）需求：**
+
+- 支援 CUDA 的 NVIDIA GPU（計算能力 6.0+）
+- 主機上已安裝 [NVIDIA 驅動程式](https://www.nvidia.com/en-us/drivers/) 535 或更新版本
+- 已安裝 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+- `:cuda` 映像僅支援 `linux/amd64`
+
 對於面向網際網路的部署，請參閱[使用反向代理](#使用反向代理)以新增 HTTPS。
 
 ## 下載
@@ -75,6 +102,12 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 docker pull hwdsl2/kokoro-server
 ```
 
+如需 NVIDIA GPU 加速，請拉取 `:cuda` 標籤：
+
+```bash
+docker pull hwdsl2/kokoro-server:cuda
+```
+
 也可從 [Quay.io](https://quay.io/repository/hwdsl2/kokoro-server) 下載：
 
 ```bash
@@ -82,7 +115,7 @@ docker pull quay.io/hwdsl2/kokoro-server
 docker image tag quay.io/hwdsl2/kokoro-server hwdsl2/kokoro-server
 ```
 
-支援平台：`linux/amd64` 和 `linux/arm64`。
+支援平台：`linux/amd64` 和 `linux/arm64`。`:cuda` 標籤僅支援 `linux/amd64`。
 
 ## 環境變數
 
@@ -162,9 +195,48 @@ volumes:
 
 **注：** 如需面向公網部署，強烈建議使用[反向代理](#使用反向代理)啟用 HTTPS。此時請將 `docker-compose.yml` 中的 `"8880:8880/tcp"` 改為 `"127.0.0.1:8880:8880/tcp"`，以防止未加密連接埠被直接存取。當伺服器可從公用網際網路存取時，請在 `env` 檔案中設定 `KOKORO_API_KEY`。
 
+<details>
+<summary><strong>使用 docker-compose 啟用 GPU（NVIDIA CUDA）</strong></summary>
+
+GPU 部署提供單獨的 `docker-compose.cuda.yml` 檔案：
+
+```bash
+cp kokoro.env.example kokoro.env
+# 依需求編輯 kokoro.env，然後：
+docker compose -f docker-compose.cuda.yml up -d
+docker logs kokoro
+```
+
+範例 `docker-compose.cuda.yml`（已包含在專案中）：
+
+```yaml
+services:
+  kokoro:
+    image: hwdsl2/kokoro-server:cuda
+    container_name: kokoro
+    restart: always
+    ports:
+      - "8880:8880/tcp"  # 如使用主機反向代理，改為 "127.0.0.1:8880:8880/tcp"
+    volumes:
+      - kokoro-data:/var/lib/kokoro
+      - ./kokoro.env:/kokoro.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  kokoro-data:
+```
+
+</details>
+
 ## API 參考
 
-該 API 與 [OpenAI 文字轉語音端點](https://platform.openai.com/docs/api-reference/audio/createSpeech)完全相容。任何已呼叫 `https://api.openai.com/v1/audio/speech` 的應用，只需設定以下環境變數即可切換到自架伺服器：
+該 API 與 [OpenAI 文字轉語音端點](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)完全相容。任何已呼叫 `https://api.openai.com/v1/audio/speech` 的應用，只需設定以下環境變數即可切換到自架伺服器：
 
 ```
 OPENAI_BASE_URL=http://您的伺服器IP:8880
@@ -480,7 +552,8 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 - 基礎映像：`python:3.12-slim`（Debian）
 - 執行時：Python 3（虛擬環境位於 `/opt/venv`）
-- TTS 引擎：[Kokoro](https://github.com/hexgrad/kokoro)（Kokoro-82M，Apache 2.0），使用 PyTorch CPU 後端
+- 映像大小：約 515 MB（`:latest`），約 4.5 GB（`:cuda`）
+- TTS 引擎：[Kokoro](https://github.com/hexgrad/kokoro)（Kokoro-82M，Apache 2.0），使用 PyTorch（CPU 和 CUDA GPU）
 - API 框架：[FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - 音訊編碼：[soundfile](https://github.com/bastibe/python-soundfile)（wav/flac）、[ffmpeg](https://ffmpeg.org/)（mp3/aac/opus）
 - 資料目錄：`/var/lib/kokoro`（Docker 資料捲）
