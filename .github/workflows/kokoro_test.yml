@@ -116,9 +116,18 @@ jobs:
             -o /tmp/test_speech_volume.wav \
             && [ -s /tmp/test_speech_volume.wav ]
 
-          # Test voices endpoint
+          # Test voices endpoint (verify non-English voices are listed)
           curl -sf http://127.0.0.1:8880/v1/voices \
             | grep -q '"voices"'
+          curl -sf http://127.0.0.1:8880/v1/voices \
+            | grep -q 'im_nicola'
+
+          # Test Italian voice (verifies non-English language pipeline loads on demand)
+          curl -sf http://127.0.0.1:8880/v1/audio/speech \
+            -H "Content-Type: application/json" \
+            -d '{"model":"tts-1","input":"Ciao mondo","voice":"im_nicola","response_format":"wav"}' \
+            -o /tmp/test_speech_italian.wav \
+            && [ -s /tmp/test_speech_italian.wav ]
 
           docker restart "$TEST_ID"
 
