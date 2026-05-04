@@ -121,7 +121,7 @@ docker image tag quay.io/hwdsl2/kokoro-server hwdsl2/kokoro-server
 
 ## 环境变量
 
-所有变量均为可选。若未设置，将自动使用安全的默认值。
+所有变量均为可选。设置 `KOKORO_API_KEY` 可启用 Bearer Token 认证。
 
 此 Docker 镜像使用以下变量，可在 `env` 文件中声明（参见[示例](kokoro.env.example)）：
 
