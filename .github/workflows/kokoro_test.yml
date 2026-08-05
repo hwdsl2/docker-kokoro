@@ -50,6 +50,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e KOKORO_DISABLE_USAGE_COUNTS=1 \
               -v kokoro-test-data:/var/lib/kokoro \
               -v ./kokoro.env.example:/kokoro.env:ro \
               -p 8880:8880/tcp \
@@ -58,6 +59,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e KOKORO_DISABLE_USAGE_COUNTS=1 \
               -v kokoro-test-data:/var/lib/kokoro \
               -p 8880:8880/tcp \
               -d kokoro-test
@@ -65,6 +67,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e KOKORO_DISABLE_USAGE_COUNTS=1 \
               -v kokoro-test-data:/var/lib/kokoro \
               -e KOKORO_API_KEY=test-kokoro-key \
               -p 8880:8880/tcp \
@@ -73,6 +76,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e KOKORO_DISABLE_USAGE_COUNTS=1 \
               -v kokoro-test-data:/var/lib/kokoro \
               -e KOKORO_API_KEY= \
               -p 8880:8880/tcp \
@@ -81,6 +85,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e KOKORO_DISABLE_USAGE_COUNTS=1 \
               -v kokoro-test-data:/var/lib/kokoro \
               -p 8880:8880/tcp \
               -d kokoro-test

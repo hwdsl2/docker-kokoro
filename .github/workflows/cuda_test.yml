@@ -22,11 +22,17 @@ jobs:
 
           set -x
 
-          docker build -f Dockerfile.cuda -t kokoro-cuda-test .
+          docker build \
+            -f Dockerfile.cuda \
+            --build-arg BUILD_DATE=ci-test \
+            --build-arg VERSION=cuda \
+            -t kokoro-cuda-test \
+            .
 
           docker run \
             --name kokoro-cuda-runtime-test \
             --restart=always \
+            -e KOKORO_DISABLE_USAGE_COUNTS=1 \
             -v kokoro-cuda-runtime-test-data:/var/lib/kokoro \
             -e KOKORO_API_KEY=test-kokoro-cuda-key \
             -p 8880:8880/tcp \
