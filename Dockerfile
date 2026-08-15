@@ -27,7 +27,7 @@ RUN set -x \
        else \
          pip install --no-cache-dir torch; \
        fi \
-    && pip install --no-cache-dir --uploaded-prior-to P3D \
+    && pip install --no-cache-dir --uploaded-prior-to P7D \
          "kokoro>=0.9" \
          "misaki[ja]" \
          "misaki[zh]" \
