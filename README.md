@@ -63,7 +63,8 @@ docker run \
 
 **Important:** This image requires at least 1.5 GB of available RAM due to the PyTorch runtime and Kokoro model. Systems with 1 GB or less of total RAM are not supported.
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 8880:8880` with `-p 127.0.0.1:8880:8880` in the `docker run` command above, to prevent direct access to the unencrypted port.
+> [!NOTE]
+> For internet-facing deployments, use a [reverse proxy](#using-a-reverse-proxy) to add HTTPS. Also replace `-p 8880:8880` with `-p 127.0.0.1:8880:8880` in the `docker run` command above, to prevent direct access to the unencrypted port.
 
 The Kokoro model (~320 MB) is downloaded and cached on first start. Check the logs to confirm the server is ready:
 
@@ -214,7 +215,8 @@ volumes:
     name: kokoro-data
 ```
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8880:8880/tcp"` to `"127.0.0.1:8880:8880/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port.
+> [!NOTE]
+> For internet-facing deployments, use a [reverse proxy](#using-a-reverse-proxy) to add HTTPS. Also change `"8880:8880/tcp"` to `"127.0.0.1:8880:8880/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port.
 
 <details>
 <summary><strong>Using docker-compose with GPU (NVIDIA CUDA)</strong></summary>
