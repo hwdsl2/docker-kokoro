@@ -29,6 +29,7 @@ import numpy as np
 import soundfile as sf
 import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -283,6 +284,15 @@ app = FastAPI(
     ),
     version="1.0.0",
     lifespan=_lifespan,
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ---------------------------------------------------------------------------
