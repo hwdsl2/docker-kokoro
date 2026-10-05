@@ -347,13 +347,16 @@ echo "==========================================================="
 echo
 echo "Synthesize speech:"
 echo "  curl http://${server_addr}:${KOKORO_PORT}/v1/audio/speech \\"
+if [ -n "$KOKORO_API_KEY" ]; then
+  echo "    -H \"Authorization: Bearer <api-key>\" \\"
+fi
 echo "    -H \"Content-Type: application/json\" \\"
 echo "    -d '{\"model\":\"tts-1\",\"input\":\"Hello world\",\"voice\":\"af_heart\"}' \\"
 echo "    --output speech.mp3"
 echo
 if [ -n "$KOKORO_API_KEY" ]; then
   echo "API key authentication is enabled."
-  echo "Include header:  -H \"Authorization: Bearer \$KOKORO_API_KEY\""
+  echo "Replace <api-key> with the key from: docker exec <container> kokoro_manage --getkey"
   echo
 fi
 echo "Interactive API docs: http://${server_addr}:${KOKORO_PORT}/docs"
