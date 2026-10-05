@@ -27,7 +27,7 @@ Docker image to run a [Kokoro](https://github.com/hexgrad/kokoro) text-to-speech
 **Also available:**
 
 - Try it online: [Open in Colab](https://vpnsetup.net/kokoro-notebook) — no Docker or installation required
-- Related AI services: [Whisper](https://github.com/hwdsl2/docker-whisper), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
+- Related AI services: [ScribeCrate](https://github.com/hwdsl2/scribecrate), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
 ## Quick start
 
@@ -74,8 +74,15 @@ docker logs kokoro
 
 Once you see "Kokoro text-to-speech server is ready", synthesize your first audio file:
 
+Fresh persistent installations require an API key. Retrieve it for the following examples:
+
+```bash
+kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+```
+
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello, world!","voice":"af_heart"}' \
     --output speech.mp3
@@ -260,13 +267,20 @@ volumes:
 
 ## API reference
 
-The API is compatible with [OpenAI's text-to-speech endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create). Any application already calling `https://api.openai.com/v1/audio/speech` can switch to self-hosted by setting:
+The API is compatible with [OpenAI's text-to-speech endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create). For clients using the OpenAI SDK, configure the base URL and your server's API key:
 
 OpenAI voice names are accepted as local aliases for client compatibility. These aliases map to Kokoro voices and do not reproduce OpenAI's proprietary voices. The `voice` field may be a string or an object with an `id` field; unknown voices return `400`.
 
+Fresh persistent installations require an API key. Retrieve it for the following examples:
+
+```bash
+kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+
+export OPENAI_BASE_URL="http://your_server_ip:8880/v1"
+export OPENAI_API_KEY="$kokoro_api_key"
 ```
-OPENAI_BASE_URL=http://your_server_ip:8880
-```
+
+If API key authentication is disabled, omit the `Authorization` header in curl examples. OpenAI SDK clients still require a nonempty key; set `OPENAI_API_KEY=unused`.
 
 ### Synthesize speech
 
@@ -292,6 +306,7 @@ Content-Type: application/json
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"The quick brown fox jumps over the lazy dog.","voice":"af_heart"}' \
     --output speech.mp3
@@ -301,6 +316,7 @@ With a different voice and format:
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
     --output speech.wav
@@ -310,7 +326,7 @@ With API key authentication:
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
-    -H "Authorization: Bearer your_api_key" \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
@@ -327,7 +343,8 @@ GET /v1/voices
 Returns all available Kokoro voice IDs and their OpenAI alias mappings.
 
 ```bash
-curl http://your_server_ip:8880/v1/voices
+curl http://your_server_ip:8880/v1/voices \
+    -H "Authorization: Bearer $kokoro_api_key"
 ```
 
 ### List models
@@ -339,7 +356,8 @@ GET /v1/models
 Returns the active models in OpenAI-compatible format.
 
 ```bash
-curl http://your_server_ip:8880/v1/models
+curl http://your_server_ip:8880/v1/models \
+    -H "Authorization: Bearer $kokoro_api_key"
 ```
 
 ### Interactive API docs

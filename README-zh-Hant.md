@@ -27,7 +27,7 @@
 **另提供：**
 
 - 線上試用：[在 Colab 中開啟](https://vpnsetup.net/kokoro-notebook)——無需 Docker 或安裝
-- 相關 AI 服務：[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh-Hant.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
+- 相關 AI 服務：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh-Hant.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
 
 ## 快速開始
 
@@ -74,8 +74,15 @@ docker logs kokoro
 
 看到「Kokoro text-to-speech server is ready」後，即可合成您的第一個音訊檔案：
 
+新的持久化安裝需要 API 金鑰。取得金鑰以用於以下範例：
+
+```bash
+kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+```
+
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"你好，世界！","voice":"af_heart"}' \
     --output speech.mp3
@@ -260,13 +267,20 @@ volumes:
 
 ## API 參考
 
-該 API 與 [OpenAI 文字轉語音端點](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)相容。任何已呼叫 `https://api.openai.com/v1/audio/speech` 的應用，只需設定以下環境變數即可切換到自架伺服器：
+該 API 與 [OpenAI 文字轉語音端點](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)相容。使用 OpenAI SDK 的用戶端需設定 API 基礎 URL 和自架伺服器的 API 金鑰：
 
 為便於客戶端相容，OpenAI 語音名稱會作為本地別名接受。這些別名會映射到 Kokoro 語音，並不會重現 OpenAI 的專有語音。`voice` 欄位可以是字串，也可以是帶有 `id` 欄位的物件；未知語音會回傳 `400`。
 
+新的持久化安裝需要 API 金鑰。取得金鑰以用於以下範例：
+
+```bash
+kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+
+export OPENAI_BASE_URL="http://您的伺服器IP:8880/v1"
+export OPENAI_API_KEY="$kokoro_api_key"
 ```
-OPENAI_BASE_URL=http://您的伺服器IP:8880
-```
+
+如果已停用 API 金鑰驗證，請省略 curl 範例中的 `Authorization` 標頭。OpenAI SDK 用戶端仍要求提供非空金鑰；此時請設定 `OPENAI_API_KEY=unused`。
 
 ### 合成語音
 
@@ -292,6 +306,7 @@ Content-Type: application/json
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"敏捷的棕色狐狸跳過了懶惰的狗。","voice":"af_heart"}' \
     --output speech.mp3
@@ -301,6 +316,7 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
     --output speech.wav
@@ -310,7 +326,7 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
-    -H "Authorization: Bearer your_api_key" \
+    -H "Authorization: Bearer $kokoro_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
@@ -327,7 +343,8 @@ GET /v1/voices
 返回所有可用的 Kokoro 語音 ID 及其 OpenAI 別名映射。
 
 ```bash
-curl http://您的伺服器IP:8880/v1/voices
+curl http://您的伺服器IP:8880/v1/voices \
+    -H "Authorization: Bearer $kokoro_api_key"
 ```
 
 ### 列出模型
@@ -339,7 +356,8 @@ GET /v1/models
 以 OpenAI 相容格式返回目前啟用的模型。
 
 ```bash
-curl http://您的伺服器IP:8880/v1/models
+curl http://您的伺服器IP:8880/v1/models \
+    -H "Authorization: Bearer $kokoro_api_key"
 ```
 
 ### 互動式 API 文件
