@@ -4,23 +4,21 @@
 
 [![Build Status](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/kokoro-notebook)
 
-Part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack) — deploy a complete self-hosted AI stack with a single command.
-
 Docker image to run a [Kokoro](https://github.com/hexgrad/kokoro) text-to-speech server. Provides an OpenAI-compatible audio speech API. Based on Debian (python:3.12-slim). Designed to be simple, private, and self-hosted.
 
 **Features:**
 
-- OpenAI-compatible `POST /v1/audio/speech` endpoint — any app using the OpenAI TTS API switches with a one-line change
-- 54 high-quality voices across 9 languages (English, Japanese, Chinese, Spanish, French, Italian, and more)
-- Accepts OpenAI voice-name aliases (`alloy`, `nova`, `echo`, ...) that map to local Kokoro voices, plus native Kokoro voice IDs (`af_heart`, `bm_george`, ...)
-- Audio stays on your server — no data sent to third parties
-- All major output formats supported: `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`
-- Streaming support — set `stream_format` to `"audio"` or `"sse"` to receive audio as each sentence is synthesized, reducing time-to-first-audio
-- NVIDIA GPU (CUDA) acceleration for faster inference (`:cuda` image tag)
-- Offline/air-gapped mode — run without internet access using pre-cached model (`KOKORO_LOCAL_ONLY`)
-- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions)
-- Persistent model cache via a Docker volume
-- Multi-arch: `linux/amd64`, `linux/arm64`
+- **OpenAI-compatible API:** `POST /v1/audio/speech` for text-to-speech requests from compatible OpenAI SDKs and apps.
+- **Private, local processing:** audio stays on your server and is not sent to third parties.
+- **Voices and languages:** 54 high-quality voices across 9 languages (English, Japanese, Chinese, Spanish, French, Italian, and more).
+- **Voice-name aliases:** accepts OpenAI voice-name aliases (`alloy`, `nova`, `echo`, ...) that map to local Kokoro voices, plus native voice IDs (`af_heart`, `bm_george`, ...).
+- **Streaming audio:** set `stream_format` to `"audio"` or `"sse"` to receive audio as each sentence is synthesized, reducing time-to-first-audio.
+- **Flexible output:** `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`.
+- **CPU and GPU support:** run on CPU or use the `:cuda` image for NVIDIA GPU acceleration.
+- **Offline operation:** run without internet access using pre-cached model (`KOKORO_LOCAL_ONLY`).
+- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions).
+
+Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack), which deploys a complete self-hosted AI stack with a single command.
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) is a practical guide to building, securing, and operating your own private AI stack.
 

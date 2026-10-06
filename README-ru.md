@@ -4,23 +4,21 @@
 
 [![Статус сборки](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![Лицензия: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Открыть в Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/kokoro-notebook)
 
-Часть [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md) — разверните полный самостоятельно размещённый AI-стек одной командой.
-
 Docker-образ для запуска сервера синтеза речи [Kokoro](https://github.com/hexgrad/kokoro). Предоставляет API синтеза речи, совместимый с OpenAI. Основан на Debian (python:3.12-slim). Разработан для простого, приватного, самостоятельно размещаемого развёртывания.
 
 **Возможности:**
 
-- Совместимый с OpenAI эндпоинт `POST /v1/audio/speech` — любое приложение, использующее OpenAI TTS API, переключается с изменением одной строки
-- 54 высококачественных голоса на 9 языках (английский, японский, китайский, испанский, французский, итальянский и другие)
-- Поддерживает псевдонимы имён голосов OpenAI (`alloy`, `nova`, `echo`, ...), которые сопоставляются с локальными голосами Kokoro, а также нативные идентификаторы Kokoro (`af_heart`, `bm_george`, ...)
-- Аудио остаётся на вашем сервере — данные не передаются третьим лицам
-- Все основные форматы вывода: `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`
-- Поддержка стриминга — установите `stream_format` в `"audio"` или `"sse"`, чтобы получать аудио по мере синтеза каждого предложения, сокращая время до первого звука
-- Аппаратное ускорение на GPU NVIDIA (CUDA) для более быстрого вывода (тег образа `:cuda`)
-- Офлайн/изолированный режим — работа без интернета с предварительно кешированной моделью (`KOKORO_LOCAL_ONLY`)
-- Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions)
-- Постоянный кеш модели через том Docker
-- Мультиархитектурный: `linux/amd64`, `linux/arm64`
+- **Совместимый с OpenAI API:** `POST /v1/audio/speech` для запросов синтеза речи из совместимых OpenAI SDK и приложений.
+- **Конфиденциальная локальная обработка:** Аудио остаётся на вашем сервере — данные не передаются третьим лицам
+- **Голоса и языки:** 54 высококачественных голоса на 9 языках (английский, японский, китайский, испанский, французский, итальянский и другие)
+- **Псевдонимы голосов:** Поддерживает псевдонимы имён голосов OpenAI (`alloy`, `nova`, `echo`, ...), которые сопоставляются с локальными голосами Kokoro, а также нативные идентификаторы Kokoro (`af_heart`, `bm_george`, ...)
+- **Потоковое аудио:** установите `stream_format` в `"audio"` или `"sse"`, чтобы получать аудио по мере синтеза каждого предложения, сокращая время до первого звука
+- **Гибкие форматы вывода:** `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`
+- **Поддержка CPU и GPU:** работа на CPU или ускорение на GPU NVIDIA с образом `:cuda`.
+- **Работа без интернета:** работа без интернета с предварительно кешированной моделью (`KOKORO_LOCAL_ONLY`)
+- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions).
+
+Также доступен в составе [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md), который развёртывает полный AI-стек на собственном сервере одной командой.
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon): практическое руководство по созданию, защите и эксплуатации собственного приватного ИИ-стека.
 

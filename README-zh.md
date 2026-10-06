@@ -4,23 +4,21 @@
 
 [![构建状态](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![开源协议: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![在 Colab 中打开](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/kokoro-notebook)
 
-[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分 ─ 一条命令部署完整的自托管 AI 技术栈。
-
 一个用于运行 [Kokoro](https://github.com/hexgrad/kokoro) 文字转语音服务器的 Docker 镜像。提供与 OpenAI 兼容的音频语音 API。基于 Debian（python:3.12-slim）。专为简单、私密、自托管而设计。
 
 **功能特性：**
 
-- 兼容 OpenAI 的 `POST /v1/audio/speech` 接口 —— 已使用 OpenAI TTS API 的应用只需修改一行即可切换
-- 54 种高质量语音，覆盖 9 种语言（英语、日语、中文、西班牙语、法语、意大利语等）
-- 支持映射到本地 Kokoro 语音的 OpenAI 语音名称别名（`alloy`、`nova`、`echo` 等），以及原生 Kokoro 语音 ID（`af_heart`、`bm_george` 等）
-- 音频保留在您的服务器上 —— 不向第三方发送数据
-- 支持所有主流输出格式：`mp3`、`wav`、`flac`、`opus`、`aac`、`pcm`
-- 流式传输支持 —— 设置 `stream_format` 为 `"audio"` 或 `"sse"` 可在每句话合成完成后立即接收音频，减少首次出声的等待时间
-- NVIDIA GPU（CUDA）加速推理（`:cuda` 镜像标签）
-- 离线/气隙模式 —— 使用预缓存模型无需访问互联网（`KOKORO_LOCAL_ONLY`）
-- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions) 自动构建和发布
-- 通过 Docker 数据卷持久化模型缓存
-- 多架构：`linux/amd64`、`linux/arm64`
+- **兼容 OpenAI 的 API：** 通过 `POST /v1/audio/speech` 接收兼容的 OpenAI SDK 和应用发出的文本转语音请求。
+- **私密的本地处理：** 音频保留在您的服务器上 —— 不向第三方发送数据
+- **语音和语言：** 54 种高质量语音，覆盖 9 种语言（英语、日语、中文、西班牙语、法语、意大利语等）
+- **语音名称别名：** 支持映射到本地 Kokoro 语音的 OpenAI 语音名称别名（`alloy`、`nova`、`echo` 等），以及原生 Kokoro 语音 ID（`af_heart`、`bm_george` 等）
+- **流式音频：** 设置 `stream_format` 为 `"audio"` 或 `"sse"` 可在每句话合成完成后立即接收音频，减少首次出声的等待时间
+- **灵活的输出格式：** `mp3`、`wav`、`flac`、`opus`、`aac`、`pcm`
+- **CPU 和 GPU 支持：** 可在 CPU 上运行，或使用 `:cuda` 镜像启用 NVIDIA GPU 加速。
+- **离线运行：** 使用预缓存模型无需访问互联网（`KOKORO_LOCAL_ONLY`）
+- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions) 自动构建和发布
+
+也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) 是一本关于构建、保护和运维自己的私有 AI 技术栈的实用指南。
 
