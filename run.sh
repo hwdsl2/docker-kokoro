@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# Docker script to configure and start a Kokoro text-to-speech server
+# Docker script to configure and start a SpeakCrate text-to-speech server
 #
 # DO NOT RUN THIS SCRIPT ON YOUR PC OR MAC! THIS IS ONLY MEANT TO BE RUN
 # IN A CONTAINER!
 #
-# This file is part of Kokoro TTS Docker image, available at:
-# https://github.com/hwdsl2/docker-kokoro
+# This file is part of SpeakCrate image, available at:
+# https://github.com/hwdsl2/speakcrate
 #
 # Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 #
@@ -252,7 +252,7 @@ printf '%s' "$KOKORO_VOICE"   > /var/lib/kokoro/.voice
 printf '%s' "$server_addr" > /var/lib/kokoro/.server_addr
 
 echo
-echo "Kokoro TTS Docker - https://github.com/hwdsl2/docker-kokoro"
+echo "SpeakCrate - https://github.com/hwdsl2/speakcrate"
 
 if ! grep -q " /var/lib/kokoro " /proc/mounts 2>/dev/null; then
   echo
@@ -265,13 +265,13 @@ if ! grep -q " /var/lib/kokoro " /proc/mounts 2>/dev/null; then
   fi
 elif [ -z "$KOKORO_API_KEY" ] && [ -z "$KOKORO_API_KEY_WAS_SET" ] && $data_existing; then
   echo
-  echo "Warning: Existing Kokoro data was found but no API key is configured."
+  echo "Warning: Existing SpeakCrate data was found but no API key is configured."
   echo "         Preserving no-auth behavior for backward compatibility."
   echo "         Set KOKORO_API_KEY to enable authentication."
 fi
 
 echo
-echo "Starting Kokoro text-to-speech server..."
+echo "Starting SpeakCrate text-to-speech server..."
 echo "  Voice:     $KOKORO_VOICE"
 echo "  Speed:     $KOKORO_SPEED"
 if [ -n "$KOKORO_LANG_CODE" ]; then
@@ -297,7 +297,7 @@ echo
 # received during the model-download startup phase is handled cleanly.
 cleanup() {
   echo
-  echo "Stopping Kokoro server..."
+  echo "Stopping SpeakCrate server..."
   kill "${KOKORO_PID:-}" 2>/dev/null
   wait "${KOKORO_PID:-}" 2>/dev/null
   exit 0
@@ -327,9 +327,9 @@ wait_for_server() {
 
 if ! wait_for_server; then
   if ! kill -0 "$KOKORO_PID" 2>/dev/null; then
-    echo "Error: Kokoro TTS server failed to start. Check the container logs for details." >&2
+    echo "Error: SpeakCrate server failed to start. Check the container logs for details." >&2
   else
-    echo "Error: Kokoro TTS server did not become ready within 300 seconds." >&2
+    echo "Error: SpeakCrate server did not become ready within 300 seconds." >&2
     kill "$KOKORO_PID" 2>/dev/null
   fi
   exit 1
@@ -339,7 +339,7 @@ report_usage_counts
 
 echo
 echo "==========================================================="
-echo " Kokoro text-to-speech server is ready"
+echo " SpeakCrate text-to-speech server is ready"
 echo "==========================================================="
 echo " Voice:    $KOKORO_VOICE"
 echo " Endpoint: http://${server_addr}:${KOKORO_PORT}"
@@ -362,7 +362,7 @@ fi
 echo "Interactive API docs: http://${server_addr}:${KOKORO_PORT}/docs"
 echo
 echo "To set up HTTPS, see: Using a reverse proxy"
-echo "  https://github.com/hwdsl2/docker-kokoro#using-a-reverse-proxy"
+echo "  https://github.com/hwdsl2/speakcrate#using-a-reverse-proxy"
 echo
 echo "Setup complete."
 echo

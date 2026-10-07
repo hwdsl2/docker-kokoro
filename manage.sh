@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# https://github.com/hwdsl2/docker-kokoro
+# https://github.com/hwdsl2/speakcrate
 #
 # Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 #
@@ -25,8 +25,8 @@ show_usage() {
   fi
   cat 1>&2 <<'EOF'
 
-Kokoro TTS Docker - Server Management
-https://github.com/hwdsl2/docker-kokoro
+SpeakCrate - Server Management
+https://github.com/hwdsl2/speakcrate
 
 Usage: docker exec <container> kokoro_manage [options]
 
@@ -127,7 +127,7 @@ load_config() {
 
 check_server() {
   if ! curl -sf "http://127.0.0.1:${KOKORO_PORT}/health" >/dev/null 2>&1; then
-    exiterr "Kokoro TTS server is not responding on port ${KOKORO_PORT}. Is the container fully started?"
+    exiterr "SpeakCrate server is not responding on port ${KOKORO_PORT}. Is the container fully started?"
   fi
 }
 
@@ -192,7 +192,7 @@ do_show_key() {
 
   echo
   echo "==========================================================="
-  echo " Kokoro API key"
+  echo " SpeakCrate API key"
   echo "==========================================================="
   echo "${KOKORO_API_KEY}"
   echo "==========================================================="
@@ -220,7 +220,7 @@ do_get_key() {
 do_show_info() {
   echo
   echo "==========================================================="
-  echo " Kokoro Text-to-Speech Server"
+  echo " SpeakCrate Text-to-Speech Server"
   echo "==========================================================="
   echo " Active voice: $KOKORO_VOICE"
   echo " Endpoint:     http://${SERVER_ADDR}:${KOKORO_PORT}"

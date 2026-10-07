@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Kokoro Text-to-Speech API Server
+SpeakCrate Text-to-Speech API Server
 Provides an OpenAI-compatible /v1/audio/speech endpoint
 powered by Kokoro TTS.
 
-https://github.com/hwdsl2/docker-kokoro
+https://github.com/hwdsl2/speakcrate
 
 Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 
@@ -276,10 +276,10 @@ async def _lifespan(app: FastAPI):
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
-    title="Kokoro Text-to-Speech",
+    title="SpeakCrate",
     description=(
-        "OpenAI-compatible text-to-speech API powered by Kokoro TTS.\n\n"
-        "https://github.com/hwdsl2/docker-kokoro"
+        "SpeakCrate: OpenAI-compatible text-to-speech API powered by Kokoro TTS.\n\n"
+        "https://github.com/hwdsl2/speakcrate"
     ),
     version="1.0.0",
     lifespan=_lifespan,
