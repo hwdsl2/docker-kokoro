@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# Kokoro — синтез речи на Docker
+# SpeakCrate
 
-[![Статус сборки](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![Лицензия: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Открыть в Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/kokoro-notebook)
+**API синтеза речи с открытым исходным кодом для размещения на собственном сервере.**
 
-Docker-образ для запуска сервера синтеза речи [Kokoro](https://github.com/hexgrad/kokoro). Предоставляет API синтеза речи, совместимый с OpenAI. Основан на Debian (python:3.12-slim). Разработан для простого, приватного, самостоятельно размещаемого развёртывания.
+[![Статус сборки](https://github.com/hwdsl2/speakcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/speakcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![Лицензия: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Открыть в Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://selfhostedaistack.com/speakcrate-notebook)
+
+SpeakCrate представляет собой API синтеза речи для размещения на собственном сервере на базе [Kokoro](https://github.com/hexgrad/kokoro). Предоставляет совместимый с OpenAI эндпоинт синтеза речи, многоязычные голоса и потоковый вывод аудио. Развёртывается с помощью Docker на CPU или NVIDIA GPU. Образ основан на Debian (python:3.12-slim).
+
+> Ранее проект назывался **docker-kokoro**, сопровождается [hwdsl2](https://github.com/hwdsl2). Docker-образ остаётся `hwdsl2/kokoro-server`; существующая конфигурация, API-эндпоинты и постоянные данные сохраняют совместимость.
 
 **Возможности:**
 
@@ -16,7 +20,7 @@ Docker-образ для запуска сервера синтеза речи [
 - **Гибкие форматы вывода:** `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`
 - **Поддержка CPU и GPU:** работа на CPU или ускорение на GPU NVIDIA с образом `:cuda`.
 - **Работа без интернета:** работа без интернета с предварительно кешированной моделью (`KOKORO_LOCAL_ONLY`)
-- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions).
+- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/speakcrate/actions).
 
 Также доступен в составе [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md), который развёртывает полный AI-стек на собственном сервере одной командой.
 
@@ -24,12 +28,12 @@ Docker-образ для запуска сервера синтеза речи [
 
 **Также доступно:**
 
-- Попробовать онлайн: [Открыть в Colab](https://vpnsetup.net/kokoro-notebook) — Docker и установка не требуются
-- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
+- Попробовать онлайн: [Открыть в Colab](https://selfhostedaistack.com/speakcrate-notebook) — Docker и установка не требуются
+- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
 ## Быстрый старт
 
-Запустите сервер Kokoro TTS следующей командой:
+Запустите сервер SpeakCrate TTS следующей командой:
 
 ```bash
 docker run \
@@ -70,7 +74,7 @@ docker run \
 docker logs kokoro
 ```
 
-После появления сообщения «Kokoro text-to-speech server is ready» синтезируйте первый аудиофайл:
+После появления сообщения «SpeakCrate text-to-speech server is ready» синтезируйте первый аудиофайл:
 
 Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
 
@@ -475,7 +479,7 @@ docker restart kokoro
 
 ## Защита сервера
 
-Если ваш сервер Kokoro TTS доступен из публичной сети — даже кратковременно — примените как минимум следующие меры защиты. Kokoro требует значительных ресурсов CPU/GPU, поэтому неаутентифицированная конечная точка может быть использована для расходования ваших вычислительных ресурсов.
+Если ваш сервер SpeakCrate TTS доступен из публичной сети — даже кратковременно — примените как минимум следующие меры защиты. SpeakCrate требует значительных ресурсов CPU/GPU, поэтому неаутентифицированная конечная точка может быть использована для расходования ваших вычислительных ресурсов.
 
 **1. Используйте API-ключ.** Новые установки с подключённым томом `/var/lib/kokoro` автоматически генерируют API-ключ. Его можно посмотреть командой `docker exec kokoro kokoro_manage --showkey`; в скриптах используйте `docker exec kokoro kokoro_manage --getkey`. Существующие установки без ключа остаются открытыми для обратной совместимости; также можно задать `KOKORO_API_KEY` в env-файле вручную. Все аутентифицированные запросы должны содержать `Authorization: Bearer <key>`.
 
@@ -558,9 +562,9 @@ docker rm -f kokoro
 
 ## Использование с другими AI-сервисами
 
-Kokoro можно использовать как службу синтеза речи в более широком self-hosted AI-стеке.
+SpeakCrate можно использовать как службу синтеза речи в более широком self-hosted AI-стеке.
 
-Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с Kokoro, Embeddings, LiteLLM, Ollama, Docling и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
+Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с SpeakCrate, Embeddings, LiteLLM, Ollama, ParseCrate и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
 
 ## Счётчики использования
 

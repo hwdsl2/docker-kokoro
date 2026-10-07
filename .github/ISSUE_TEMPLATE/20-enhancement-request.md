@@ -8,9 +8,9 @@ assignees: ''
 ---
 **Checklist**
 
-- [ ] I searched existing [Issues](https://github.com/hwdsl2/docker-kokoro/issues?q=is%3Aissue), and did not find a similar enhancement request
-- [ ] I read the [README](https://github.com/hwdsl2/docker-kokoro/blob/main/README.md) or the relevant section
-- [ ] This request is about the Kokoro Docker image/config/API, not only Kokoro itself
+- [ ] I searched existing [Issues](https://github.com/hwdsl2/speakcrate/issues?q=is%3Aissue), and did not find a similar enhancement request
+- [ ] I read the [README](https://github.com/hwdsl2/speakcrate/blob/main/README.md) or the relevant section
+- [ ] This request is about the SpeakCrate Docker image/config/API, not only Kokoro itself
 
 **Describe the enhancement request**
 A clear and concise description of your enhancement request.

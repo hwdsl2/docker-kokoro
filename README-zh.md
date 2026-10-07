@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# Docker 上的 Kokoro 文字转语音
+# SpeakCrate
 
-[![构建状态](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![开源协议: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![在 Colab 中打开](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/kokoro-notebook)
+**开源、自托管的文本转语音 API。**
 
-一个用于运行 [Kokoro](https://github.com/hexgrad/kokoro) 文字转语音服务器的 Docker 镜像。提供与 OpenAI 兼容的音频语音 API。基于 Debian（python:3.12-slim）。专为简单、私密、自托管而设计。
+[![构建状态](https://github.com/hwdsl2/speakcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/speakcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![开源协议: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![在 Colab 中打开](https://colab.research.google.com/assets/colab-badge.svg)](https://selfhostedaistack.com/speakcrate-notebook)
+
+SpeakCrate 是一个自托管的文本转语音 API，由 [Kokoro](https://github.com/hexgrad/kokoro) 提供支持。它提供 OpenAI 兼容的语音合成端点、多语言语音和流式音频输出。可使用 Docker 在 CPU 或 NVIDIA GPU 上部署。镜像基于 Debian（python:3.12-slim）。
+
+> 此项目原名为 **docker-kokoro**，由 [hwdsl2](https://github.com/hwdsl2) 维护。Docker 镜像仍为 `hwdsl2/kokoro-server`；现有配置、API 端点和持久化数据保持兼容。
 
 **功能特性：**
 
@@ -16,7 +20,7 @@
 - **灵活的输出格式：** `mp3`、`wav`、`flac`、`opus`、`aac`、`pcm`
 - **CPU 和 GPU 支持：** 可在 CPU 上运行，或使用 `:cuda` 镜像启用 NVIDIA GPU 加速。
 - **离线运行：** 使用预缓存模型无需访问互联网（`KOKORO_LOCAL_ONLY`）
-- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions) 自动构建和发布
+- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/speakcrate/actions) 自动构建和发布
 
 也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
@@ -24,12 +28,12 @@
 
 **另提供：**
 
-- 在线试用：[在 Colab 中打开](https://vpnsetup.net/kokoro-notebook)——无需 Docker 或安装
-- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
+- 在线试用：[在 Colab 中打开](https://selfhostedaistack.com/speakcrate-notebook)——无需 Docker 或安装
+- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
 
 ## 快速开始
 
-使用以下命令启动 Kokoro TTS 服务器：
+使用以下命令启动 SpeakCrate TTS 服务器：
 
 ```bash
 docker run \
@@ -70,7 +74,7 @@ Kokoro 模型（约 320 MB）将在首次启动时自动下载并缓存。查看
 docker logs kokoro
 ```
 
-看到 "Kokoro text-to-speech server is ready" 后，即可合成您的第一个音频文件：
+看到 "SpeakCrate text-to-speech server is ready" 后，即可合成您的第一个音频文件：
 
 新的持久化安装需要 API 密钥。获取密钥以用于以下示例：
 
@@ -475,7 +479,7 @@ docker restart kokoro
 
 ## 保护你的服务器
 
-如果你的 Kokoro TTS 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。Kokoro 对 CPU/GPU 资源消耗较大，未做身份验证的接口可能被滥用，浪费你的计算资源。
+如果你的 SpeakCrate TTS 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。SpeakCrate 对 CPU/GPU 资源消耗较大，未做身份验证的接口可能被滥用，浪费你的计算资源。
 
 **1. 使用 API 密钥。** 挂载 `/var/lib/kokoro` 数据卷的新安装会自动生成 API 密钥。可用 `docker exec kokoro kokoro_manage --showkey` 查看；脚本中可用 `docker exec kokoro kokoro_manage --getkey`。没有密钥的既有安装会保持开放以兼容旧行为；也可以在 `env` 文件中设置 `KOKORO_API_KEY` 手动启用认证。所有已认证请求必须包含 `Authorization: Bearer <key>`。
 
@@ -558,9 +562,9 @@ docker rm -f kokoro
 
 ## 与其他 AI 服务配合使用
 
-Kokoro 可作为更广泛的自托管 AI 设置中的文字转语音服务。
+SpeakCrate 可作为更广泛的自托管 AI 设置中的文字转语音服务。
 
-如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 Kokoro、Embeddings、LiteLLM、Ollama、Docling 和 MCP Gateway 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
+如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 SpeakCrate、Embeddings、LiteLLM、Ollama、ParseCrate 和 MCP Gateway 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
 
 ## 使用计数
 

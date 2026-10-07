@@ -8,9 +8,9 @@ assignees: ''
 ---
 **任务列表**
 
-- [ ] 我已阅读[自述文件](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)或相关章节
-- [ ] 我搜索了已有的 [Issues](https://github.com/hwdsl2/docker-kokoro/issues?q=is%3Aissue)
-- [ ] 这个问题是关于 Kokoro Docker 镜像/配置/API，而不只是 Kokoro 本身
+- [ ] 我已阅读[自述文件](https://github.com/hwdsl2/speakcrate/blob/main/README-zh.md)或相关章节
+- [ ] 我搜索了已有的 [Issues](https://github.com/hwdsl2/speakcrate/issues?q=is%3Aissue)
+- [ ] 这个问题是关于 SpeakCrate Docker 镜像/配置/API，而不只是 Kokoro 本身
 
 <!---
 如果你确认问题属于上游项目本身，请考虑在相应上游项目提交 issue：[Kokoro](https://github.com/hexgrad/kokoro)。

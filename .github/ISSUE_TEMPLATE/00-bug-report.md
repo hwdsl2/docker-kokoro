@@ -8,9 +8,9 @@ assignees: ''
 ---
 **Checklist**
 
-- [ ] I read the [README](https://github.com/hwdsl2/docker-kokoro/blob/main/README.md) or the relevant section
-- [ ] I searched existing [Issues](https://github.com/hwdsl2/docker-kokoro/issues?q=is%3Aissue)
-- [ ] This issue is about the Kokoro Docker image/config/API, not only Kokoro itself
+- [ ] I read the [README](https://github.com/hwdsl2/speakcrate/blob/main/README.md) or the relevant section
+- [ ] I searched existing [Issues](https://github.com/hwdsl2/speakcrate/issues?q=is%3Aissue)
+- [ ] This issue is about the SpeakCrate Docker image/config/API, not only Kokoro itself
 
 <!---
 If you found a reproducible bug in the upstream project itself, consider opening an issue upstream: [Kokoro](https://github.com/hexgrad/kokoro).

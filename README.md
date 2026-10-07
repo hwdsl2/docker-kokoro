@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# Kokoro Text-to-Speech on Docker
+# SpeakCrate
 
-[![Build Status](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-kokoro/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/kokoro-notebook)
+**Open-source, self-hosted text-to-speech API.**
 
-Docker image to run a [Kokoro](https://github.com/hexgrad/kokoro) text-to-speech server. Provides an OpenAI-compatible audio speech API. Based on Debian (python:3.12-slim). Designed to be simple, private, and self-hosted.
+[![Build Status](https://github.com/hwdsl2/speakcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/speakcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-kokoro-server.svg)](https://hub.docker.com/r/hwdsl2/kokoro-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://selfhostedaistack.com/speakcrate-notebook)
+
+SpeakCrate is a self-hosted text-to-speech API powered by [Kokoro](https://github.com/hexgrad/kokoro). It provides an OpenAI-compatible speech endpoint, multilingual voices, and streamed audio. Deploy with Docker on CPU or an NVIDIA GPU. The image is based on Debian (python:3.12-slim).
+
+> Previously known as **docker-kokoro**, maintained by [hwdsl2](https://github.com/hwdsl2). The Docker image remains `hwdsl2/kokoro-server`; existing configuration, API endpoints, and persistent data remain compatible.
 
 **Features:**
 
@@ -16,7 +20,7 @@ Docker image to run a [Kokoro](https://github.com/hexgrad/kokoro) text-to-speech
 - **Flexible output:** `mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`.
 - **CPU and GPU support:** run on CPU or use the `:cuda` image for NVIDIA GPU acceleration.
 - **Offline operation:** run without internet access using pre-cached model (`KOKORO_LOCAL_ONLY`).
-- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/docker-kokoro/actions).
+- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/speakcrate/actions).
 
 Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack), which deploys a complete self-hosted AI stack with a single command.
 
@@ -24,12 +28,12 @@ Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/s
 
 **Also available:**
 
-- Try it online: [Open in Colab](https://vpnsetup.net/kokoro-notebook) — no Docker or installation required
-- Related AI services: [ScribeCrate](https://github.com/hwdsl2/scribecrate), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
+- Try it online: [Open in Colab](https://selfhostedaistack.com/speakcrate-notebook) — no Docker or installation required
+- Related AI services: [ScribeCrate](https://github.com/hwdsl2/scribecrate), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [ParseCrate](https://github.com/hwdsl2/parsecrate), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
 ## Quick start
 
-Use this command to set up a Kokoro TTS server:
+Use this command to set up a SpeakCrate TTS server:
 
 ```bash
 docker run \
@@ -70,7 +74,7 @@ The Kokoro model (~320 MB) is downloaded and cached on first start. Check the lo
 docker logs kokoro
 ```
 
-Once you see "Kokoro text-to-speech server is ready", synthesize your first audio file:
+Once you see "SpeakCrate text-to-speech server is ready", synthesize your first audio file:
 
 Fresh persistent installations require an API key. Retrieve it for the following examples:
 
@@ -491,7 +495,7 @@ docker restart kokoro
 
 ## Securing your server
 
-If your Kokoro TTS server is reachable from the public internet — even briefly — apply at minimum these protections. Kokoro is CPU/GPU-intensive, so an unauthenticated endpoint can be abused to burn your compute resources.
+If your SpeakCrate TTS server is reachable from the public internet — even briefly — apply at minimum these protections. SpeakCrate is CPU/GPU-intensive, so an unauthenticated endpoint can be abused to burn your compute resources.
 
 **1. Use an API key.** Fresh installs with a mounted `/var/lib/kokoro` volume auto-generate an API key. Display it with `docker exec kokoro kokoro_manage --showkey`, or use `docker exec kokoro kokoro_manage --getkey` in scripts. Existing installs without a key remain open for backward compatibility; set `KOKORO_API_KEY` in your `env` file to enable authentication manually. All authenticated requests must include `Authorization: Bearer <key>`.
 
@@ -574,9 +578,9 @@ Your downloaded model is preserved in the `kokoro-data` volume.
 
 ## Using with other AI services
 
-Kokoro can be used as the text-to-speech service in a broader self-hosted AI setup.
+SpeakCrate can be used as the text-to-speech service in a broader self-hosted AI setup.
 
-For full and lightweight Docker Compose stacks, manual `docker run` examples, and voice/RAG/MCP pipeline examples with Kokoro, Embeddings, LiteLLM, Ollama, Docling, and MCP Gateway, see [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack).
+For full and lightweight Docker Compose stacks, manual `docker run` examples, and voice/RAG/MCP pipeline examples with SpeakCrate, Embeddings, LiteLLM, Ollama, ParseCrate, and MCP Gateway, see [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack).
 
 ## Usage counts
 
