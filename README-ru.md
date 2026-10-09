@@ -8,7 +8,7 @@
 
 SpeakCrate представляет собой API синтеза речи для размещения на собственном сервере на базе [Kokoro](https://github.com/hexgrad/kokoro). Предоставляет совместимый с OpenAI эндпоинт синтеза речи, многоязычные голоса и потоковый вывод аудио. Развёртывается с помощью Docker на CPU или NVIDIA GPU. Образ основан на Debian (python:3.12-slim).
 
-> Ранее проект назывался **docker-kokoro**, сопровождается [hwdsl2](https://github.com/hwdsl2). Docker-образ остаётся `hwdsl2/kokoro-server`; существующая конфигурация, API-эндпоинты и постоянные данные сохраняют совместимость.
+> Ранее проект назывался `docker-kokoro`. Его поддерживает [hwdsl2](https://github.com/hwdsl2). Docker-образ остаётся `hwdsl2/kokoro-server`.
 
 **Возможности:**
 
