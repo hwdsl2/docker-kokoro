@@ -79,12 +79,12 @@ docker logs kokoro
 Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
 
 ```bash
-kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+speak_api_key="$(docker exec kokoro kokoro_manage --getkey)"
 ```
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Привет, мир!","voice":"af_heart"}' \
     --output speech.mp3
@@ -276,10 +276,10 @@ API совместим с [эндпоинтом синтеза речи OpenAI](
 Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
 
 ```bash
-kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+speak_api_key="$(docker exec kokoro kokoro_manage --getkey)"
 
 export OPENAI_BASE_URL="http://IP_вашего_сервера:8880/v1"
-export OPENAI_API_KEY="$kokoro_api_key"
+export OPENAI_API_KEY="$speak_api_key"
 ```
 
 Если аутентификация по API-ключу отключена, опустите заголовок `Authorization` в примерах curl. Клиентам OpenAI SDK по-прежнему нужен непустой ключ; в этом случае задайте `OPENAI_API_KEY=unused`.
@@ -308,7 +308,7 @@ Content-Type: application/json
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Быстрая коричневая лиса прыгает через ленивую собаку.","voice":"af_heart"}' \
     --output speech.mp3
@@ -318,7 +318,7 @@ curl http://IP_вашего_сервера:8880/v1/audio/speech \
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
     --output speech.wav
@@ -328,7 +328,7 @@ curl http://IP_вашего_сервера:8880/v1/audio/speech \
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
@@ -346,7 +346,7 @@ GET /v1/voices
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/voices \
-    -H "Authorization: Bearer $kokoro_api_key"
+    -H "Authorization: Bearer $speak_api_key"
 ```
 
 ### Список моделей
@@ -359,7 +359,7 @@ GET /v1/models
 
 ```bash
 curl http://IP_вашего_сервера:8880/v1/models \
-    -H "Authorization: Bearer $kokoro_api_key"
+    -H "Authorization: Bearer $speak_api_key"
 ```
 
 ### Интерактивная документация API

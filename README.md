@@ -79,12 +79,12 @@ Once you see "SpeakCrate text-to-speech server is ready", synthesize your first 
 Fresh persistent installations require an API key. Retrieve it for the following examples:
 
 ```bash
-kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+speak_api_key="$(docker exec kokoro kokoro_manage --getkey)"
 ```
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello, world!","voice":"af_heart"}' \
     --output speech.mp3
@@ -276,10 +276,10 @@ OpenAI voice names are accepted as local aliases for client compatibility. These
 Fresh persistent installations require an API key. Retrieve it for the following examples:
 
 ```bash
-kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+speak_api_key="$(docker exec kokoro kokoro_manage --getkey)"
 
 export OPENAI_BASE_URL="http://your_server_ip:8880/v1"
-export OPENAI_API_KEY="$kokoro_api_key"
+export OPENAI_API_KEY="$speak_api_key"
 ```
 
 If API key authentication is disabled, omit the `Authorization` header in curl examples. OpenAI SDK clients still require a nonempty key; set `OPENAI_API_KEY=unused`.
@@ -308,7 +308,7 @@ Content-Type: application/json
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"The quick brown fox jumps over the lazy dog.","voice":"af_heart"}' \
     --output speech.mp3
@@ -318,7 +318,7 @@ With a different voice and format:
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
     --output speech.wav
@@ -328,7 +328,7 @@ With API key authentication:
 
 ```bash
 curl http://your_server_ip:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
@@ -346,7 +346,7 @@ Returns all available Kokoro voice IDs and their OpenAI alias mappings.
 
 ```bash
 curl http://your_server_ip:8880/v1/voices \
-    -H "Authorization: Bearer $kokoro_api_key"
+    -H "Authorization: Bearer $speak_api_key"
 ```
 
 ### List models
@@ -359,7 +359,7 @@ Returns the active models in OpenAI-compatible format.
 
 ```bash
 curl http://your_server_ip:8880/v1/models \
-    -H "Authorization: Bearer $kokoro_api_key"
+    -H "Authorization: Bearer $speak_api_key"
 ```
 
 ### Interactive API docs

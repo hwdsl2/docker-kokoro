@@ -79,12 +79,12 @@ docker logs kokoro
 新的持久化安裝需要 API 金鑰。取得金鑰以用於以下範例：
 
 ```bash
-kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+speak_api_key="$(docker exec kokoro kokoro_manage --getkey)"
 ```
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"你好，世界！","voice":"af_heart"}' \
     --output speech.mp3
@@ -276,10 +276,10 @@ volumes:
 新的持久化安裝需要 API 金鑰。取得金鑰以用於以下範例：
 
 ```bash
-kokoro_api_key="$(docker exec kokoro kokoro_manage --getkey)"
+speak_api_key="$(docker exec kokoro kokoro_manage --getkey)"
 
 export OPENAI_BASE_URL="http://您的伺服器IP:8880/v1"
-export OPENAI_API_KEY="$kokoro_api_key"
+export OPENAI_API_KEY="$speak_api_key"
 ```
 
 如果已停用 API 金鑰驗證，請省略 curl 範例中的 `Authorization` 標頭。OpenAI SDK 用戶端仍要求提供非空金鑰；此時請設定 `OPENAI_API_KEY=unused`。
@@ -308,7 +308,7 @@ Content-Type: application/json
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"敏捷的棕色狐狸跳過了懶惰的狗。","voice":"af_heart"}' \
     --output speech.mp3
@@ -318,7 +318,7 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello from London.","voice":"bm_george","response_format":"wav","speed":0.9}' \
     --output speech.wav
@@ -328,7 +328,7 @@ curl http://您的伺服器IP:8880/v1/audio/speech \
 
 ```bash
 curl http://您的伺服器IP:8880/v1/audio/speech \
-    -H "Authorization: Bearer $kokoro_api_key" \
+    -H "Authorization: Bearer $speak_api_key" \
     -H "Content-Type: application/json" \
     -d '{"model":"tts-1","input":"Hello world","voice":"nova"}' \
     --output speech.mp3
@@ -346,7 +346,7 @@ GET /v1/voices
 
 ```bash
 curl http://您的伺服器IP:8880/v1/voices \
-    -H "Authorization: Bearer $kokoro_api_key"
+    -H "Authorization: Bearer $speak_api_key"
 ```
 
 ### 列出模型
@@ -359,7 +359,7 @@ GET /v1/models
 
 ```bash
 curl http://您的伺服器IP:8880/v1/models \
-    -H "Authorization: Bearer $kokoro_api_key"
+    -H "Authorization: Bearer $speak_api_key"
 ```
 
 ### 互動式 API 文件
